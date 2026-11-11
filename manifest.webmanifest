@@ -1,0 +1,13 @@
+{
+  "name": "Check-in · Ziad Elfeky",
+  "short_name": "Check-in ZF",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0b0a",
+  "theme_color": "#0c0b0a",
+  "icons": [
+    { "src": "zf-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "zf-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0b0a">
+<meta name="robots" content="noindex, nofollow">
+<title>Coach · Ziad Elfeky</title>
+<meta name="apple-mobile-web-app-title" content="ZF Coach">
+<link rel="icon" type="image/png" sizes="32x32" href="./zf-favicon-32.png">
+<link rel="apple-touch-icon" href="./zf-apple-touch.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0c0b0a; --panel:#161411; --panel2:#1c1915; --line:rgba(242,237,228,.10); --line2:rgba(242,237,228,.18);
+    --gold:#cfb27c; --gold-soft:rgba(207,178,124,.10); --gold-line:rgba(207,178,124,.35);
+    --text:#f2ede4; --muted:#b0a99c; --soft:#938c7f;
+    --ok:#9cc49a; --warn:#e3967f; --warn-soft:rgba(227,150,127,.10); --warn-line:rgba(227,150,127,.35);
+    --serif:'Lora',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:radial-gradient(1000px 480px at 50% -12%, rgba(207,178,124,.07), transparent 65%), var(--bg);color:var(--text);font-family:'Poppins',sans-serif;font-size:14px;font-weight:300;min-height:100dvh;-webkit-font-smoothing:antialiased}
+  button,input,select{font-family:inherit}
+  .hidden{display:none !important}
+  .muted{color:var(--muted)} .soft{color:var(--soft)}
+  .label{font-size:.68rem;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+  .mark svg{display:block;width:100%;height:auto}
+  .mark .z{stroke:var(--text)} .mark .f{stroke:var(--gold)}
+
+  /* login */
+  .login{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+  .login .mark{width:54px;margin-bottom:14px}
+  .login .bname{font-family:var(--serif);font-weight:500;font-size:1.3rem}
+  .login .label{margin:6px 0 30px}
+  .card{background:var(--panel);border:1px solid var(--line2);border-radius:18px;padding:22px}
+  .login .card{width:100%;max-width:350px}
+  input,select{width:100%;padding:12px 14px;border-radius:11px;border:1px solid var(--line2);background:var(--bg);color:var(--text);font-size:.95rem;outline:none;margin-bottom:10px}
+  input:focus,select:focus{border-color:var(--gold)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border:none;border-radius:11px;background:var(--gold);color:#14110d;font-weight:600;font-size:.95rem;cursor:pointer;text-decoration:none}
+  .btn:disabled{opacity:.5}
+  .btn-sm{width:auto;padding:8px 13px;font-size:.78rem;border-radius:9px}
+  .btn-ghost{background:transparent;border:1px solid var(--line2);color:var(--muted)}
+  .btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+  .btn-wa{background:transparent;border:1px solid var(--gold-line);color:var(--gold)}
+  .err{color:var(--warn);font-size:.85rem;min-height:1.2em;margin-top:8px}
+
+  /* layout */
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(12,11,10,.92);backdrop-filter:blur(8px);z-index:5}
+  .top .brand{display:flex;align-items:center;gap:12px}
+  .top .mark{width:30px}
+  .top .bname{font-family:var(--serif);font-weight:500;font-size:1.02rem;line-height:1.1}
+  .top .date{font-size:.78rem;color:var(--muted)}
+  main{max-width:980px;margin:0 auto;padding:22px 16px 80px;display:flex;flex-direction:column;gap:34px}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  h2{font-family:var(--serif);font-weight:500;font-size:1.35rem;letter-spacing:-.01em}
+  h2 .count{font-family:'Poppins',sans-serif;font-size:.78rem;color:var(--gold);border:1px solid var(--gold-line);border-radius:20px;padding:1px 9px;margin-left:8px;vertical-align:3px}
+
+  /* hero */
+  .hero{display:grid;grid-template-columns:1fr 2.4fr;gap:12px}
+  .today{background:var(--panel);border:1px solid var(--gold-line);border-radius:18px;padding:20px 22px;display:flex;flex-direction:column;justify-content:center}
+  .today b{font-family:var(--serif);font-weight:500;font-size:4rem;line-height:1;color:var(--gold);margin:10px 0 4px}
+  .today span.s{font-size:.82rem;color:var(--muted)}
+  .minis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .mini{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;justify-content:flex-end}
+  .mini b{font-family:var(--serif);font-weight:500;font-size:2rem;line-height:1}
+  .mini span{font-size:.74rem;color:var(--muted);margin-top:6px;line-height:1.4}
+  .mini.warn b{color:var(--warn)}
+
+  /* bars */
+  .bars{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:6px;align-items:end;height:170px;padding:14px 12px 10px;background:var(--panel);border:1px solid var(--line);border-radius:18px}
+  .bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:5px;height:100%;cursor:pointer;background:none;border:none;color:inherit;padding:0}
+  .bar .n{font-size:.72rem;color:var(--muted)}
+  .bar .col{width:100%;max-width:26px;border-radius:6px 6px 3px 3px;background:var(--gold-soft);border:1px solid var(--gold-line);min-height:3px;transition:background .2s}
+  .bar:hover .col{background:rgba(207,178,124,.25)}
+  .bar.on .col{background:var(--gold);border-color:var(--gold)}
+  .bar.on .n{color:var(--gold);font-weight:600}
+  .bar .d{font-size:.62rem;color:var(--soft);line-height:1.25;text-align:center}
+
+  /* tabs + lists */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .tab{padding:8px 14px;border-radius:20px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:.8rem;cursor:pointer}
+  .tab b{font-weight:600;margin-left:4px;color:var(--text)}
+  .tab.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft)}
+  .tab.on b{color:var(--gold)}
+  .list{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border-top:1px solid var(--line)}
+  .item:first-child{border-top:none}
+  .who{min-width:0}
+  .name{font-family:var(--serif);font-size:1.08rem;font-weight:500;line-height:1.3}
+  .meta{font-size:.76rem;color:var(--muted);margin-top:2px;line-height:1.5}
+  .meta .id{color:var(--gold);letter-spacing:.08em}
+  .side{display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .left{text-align:right}
+  .left b{display:block;font-family:var(--serif);font-weight:500;font-size:1.7rem;line-height:1;color:var(--gold)}
+  .left b.zero{color:var(--warn)}
+  .left span{font-size:.68rem;color:var(--muted)}
+  .chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+  .chip{font-size:.66rem;letter-spacing:.03em;padding:2px 8px;border-radius:20px;border:1px solid var(--line2);color:var(--muted)}
+  .chip.warn{border-color:var(--warn-line);color:var(--warn);background:var(--warn-soft)}
+  .chip.gold{border-color:var(--gold-line);color:var(--gold);background:var(--gold-soft)}
+  .actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .member .mtop{display:flex;justify-content:space-between;align-items:center;gap:18px;flex:1;min-width:0}
+  .member .left span{white-space:nowrap}
+  .member .macts{flex-shrink:0}
+  .empty{padding:20px 18px;color:var(--muted);font-size:.86rem}
+  .time{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;min-width:44px}
+  #search{max-width:260px;margin:0}
+  .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .foot{font-size:.72rem;color:var(--soft);text-align:center;line-height:1.7}
+  .foot a{color:var(--gold)}
+
+  /* dialogs */
+  dialog{background:var(--panel2);color:var(--text);border:1px solid var(--line2);border-radius:20px;padding:24px;max-width:420px;width:92%;margin:auto}
+  dialog::backdrop{background:rgba(0,0,0,.65)}
+  dialog h3{font-family:var(--serif);font-weight:500;font-size:1.35rem;margin-bottom:4px}
+  dialog .dsub{font-size:.8rem;color:var(--muted);margin-bottom:16px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+  .grid2 .full{grid-column:1/-1}
+  .fl{font-size:.7rem;color:var(--muted);letter-spacing:.06em;margin:2px 0 5px;display:block}
+  .summary{font-size:.8rem;color:var(--gold);margin:-2px 0 12px;min-height:1.2em}
+  .done-id{font-family:var(--serif);font-size:2.6rem;color:var(--gold);text-align:center;letter-spacing:.1em;margin:8px 0}
+  .row-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+
+  @media (max-width:760px){
+    .hero{grid-template-columns:1fr}
+    .today{flex-direction:row;align-items:baseline;gap:12px}
+    .today b{font-size:3.2rem;margin:0}
+    .minis{grid-template-columns:repeat(2,1fr)}
+    .mini{padding:14px}
+    .mini b{font-size:1.6rem}
+    .bars{gap:3px;padding:12px 8px 8px}
+    .bar .d{font-size:.55rem}
+    .item{flex-direction:column;align-items:stretch}
+    .side{justify-content:space-between}
+    .left{text-align:left}
+    #search{max-width:none;flex:1}
+    .tools{flex:1 1 100% !important}
+    .top .tools{flex:0 0 auto !important}
+    .top .date{display:none}
+    .member .mtop{align-items:flex-start}
+    .member .left{text-align:right}
+    .member .macts{display:grid;grid-template-columns:1fr 1fr 1fr auto;justify-content:stretch}
+    .member .macts .btn{padding-left:8px;padding-right:8px}
+    #dayList .item{flex-direction:row;align-items:center}
+    #dayList .side{justify-content:flex-start;gap:12px !important;min-width:0}
+    #attnList .actions{justify-content:flex-start}
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="viewLogin">
+  <div class="mark" aria-hidden="true"><svg viewBox="4 46 228 160"><defs><mask id="zfcutA" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="240"><rect width="240" height="240" fill="#fff"></rect><path d="M20 168 L224 92" stroke="#000" stroke-width="6"></path></mask></defs><g mask="url(#zfcutA)"><g transform="skewX(-10) translate(18 0)"><g fill="none" stroke-width="24"><path class="z" d="M36 66 H130 L46 174 H140"></path><path class="f" d="M168 186 V66 H216 M168 120 H206"></path></g></g></g></svg></div>
+  <div class="bname">Ziad Elfeky</div>
+  <div class="label">Private Training · Coach</div>
+  <div class="card">
+    <input type="email" id="email" placeholder="Email" autocomplete="username">
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="btnLogin">Sign in</button>
+    <p class="err" id="loginErr"></p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="viewDash" class="hidden">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><svg viewBox="4 46 228 160"><defs><mask id="zfcutB" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="240"><rect width="240" height="240" fill="#fff"></rect><path d="M20 168 L224 92" stroke="#000" stroke-width="6"></path></mask></defs><g mask="url(#zfcutB)"><g transform="skewX(-10) translate(18 0)"><g fill="none" stroke-width="24"><path class="z" d="M36 66 H130 L46 174 H140"></path><path class="f" d="M168 186 V66 H216 M168 120 H206"></path></g></g></g></svg></div>
+      <div><div class="bname">Ziad Elfeky</div><div class="label" style="font-size:.6rem">Private Training</div></div>
+    </div>
+    <div class="tools"><span class="date" id="topDate"></span><button class="btn btn-sm btn-ghost" id="btnLogout">Sign out</button></div>
+  </header>
+  <main>
+
+    <section class="hero">
+      <div class="today"><span class="label">Today</span><b id="nToday">0</b><span class="s">sessions</span></div>
+      <div class="minis">
+        <div class="mini"><b id="nWeek">0</b><span>Sessions<br>last 7 days</span></div>
+        <div class="mini"><b id="nActive">0</b><span>Clients with<br>an active package</span></div>
+        <div class="mini"><b id="nMonth">0</b><span>EGP collected<br id="monthLbl">this month</span></div>
+        <div class="mini" id="debtBox"><b id="nDebt">0</b><span>Sessions owed<br>(no package)</span></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head"><h2>Last 14 days</h2><span class="soft" style="font-size:.76rem">Tap a day to see who trained</span></div>
+      <div class="bars" id="bars"></div>
+    </section>
+
+    <section id="attnSec">
+      <div class="sec-head"><h2>Needs attention<span class="count" id="nAttn">0</span></h2></div>
+      <div class="tabs">
+        <button class="tab on" data-tab="almost">Almost finishing<b id="tAlmost">0</b></button>
+        <button class="tab" data-tab="away">Away 7+ days<b id="tAway">0</b></button>
+        <button class="tab" data-tab="ended">Ended, not renewed<b id="tEnded">0</b></button>
+        <button class="tab" data-tab="unpaid">Not paid<b id="tUnpaid">0</b></button>
+      </div>
+      <div class="list" id="attnList"></div>
+    </section>
+
+    <section id="daySec">
+      <div class="sec-head">
+        <h2 id="dayTitle">Today</h2>
+        <input type="date" id="attDate" style="max-width:170px;margin:0">
+      </div>
+      <div class="list" id="dayList"></div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <h2>Clients<span class="count" id="nMembers">0</span></h2>
+        <div class="tools" style="flex:1;justify-content:flex-end">
+          <input id="search" placeholder="Search name, phone or ID">
+          <button class="btn btn-sm" id="btnAddClient">+ Client</button>
+        </div>
+      </div>
+      <div class="list" id="clientList"></div>
+    </section>
+
+    <p class="foot">Packages last 30 days. Unused sessions don’t carry over. Telegram summary every night at 10 pm.<br>
+      Client check-in page: <a id="checkinLink" target="_blank" rel="noopener"></a></p>
+  </main>
+</div>
+
+<!-- NEW CLIENT -->
+<dialog id="dlgClient">
+  <div id="clientForm">
+    <h3>New client</h3>
+    <p class="dsub">A 4-digit member ID is created automatically.</p>
+    <input id="cName" placeholder="Full name">
+    <input id="cPhone" type="tel" inputmode="numeric" placeholder="Phone (01XXXXXXXXX)" maxlength="11">
+    <button class="btn" id="btnSaveClient">Save client</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgClient.close()">Cancel</button>
+    <p class="err" id="clientErr"></p>
+  </div>
+  <div id="clientDone" class="hidden" style="text-align:center">
+    <h3 id="cDoneName"></h3>
+    <p class="dsub">Member ID</p>
+    <div class="done-id" id="cDoneId"></div>
+    <p class="dsub">They check in with this ID or their phone.</p>
+    <a class="btn btn-wa" id="cDoneWa" target="_blank" rel="noopener">Send ID &amp; check-in link on WhatsApp</a>
+    <button class="btn" id="btnClientToPkg" style="margin-top:8px">Add their package</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgClient.close()">Done</button>
+  </div>
+</dialog>
+
+<!-- NEW PACKAGE + PAYMENT -->
+<dialog id="dlgPkg">
+  <h3 id="pkgTitle">New package</h3>
+  <p class="dsub">Prices fill in from your packages. You can still edit them.</p>
+  <div class="grid2">
+    <label class="full"><span class="fl">Package</span><select id="pPreset"></select></label>
+    <label><span class="fl">Sessions</span><input id="pSessions" type="number" min="1" inputmode="numeric"></label>
+    <label><span class="fl">Price (EGP)</span><input id="pPrice" type="number" min="0" inputmode="numeric"></label>
+    <label class="full"><span class="fl">Ends on</span><input id="pExpiry" type="date"></label>
+    <label class="full"><span class="fl">Payment</span>
+      <select id="pMethod"><option value="cash">Paid · Cash</option><option value="instapay">Paid · InstaPay</option><option value="unpaid">Not paid yet</option></select></label>
+  </div>
+  <p class="summary" id="pSummary"></p>
+  <button class="btn" id="btnSavePkg">Save package</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgPkg.close()">Cancel</button>
+  <p class="err" id="pkgErr"></p>
+</dialog>
+
+<!-- LOG SESSION -->
+<dialog id="dlgLog">
+  <h3 id="logTitle">Log session</h3>
+  <p class="dsub" id="logSub"></p>
+  <label><span class="fl">Date</span><input id="logDate" type="date"></label>
+  <p class="summary" id="logNote"></p>
+  <button class="btn" id="btnSaveLog">Log session</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgLog.close()">Cancel</button>
+  <p class="err" id="logErr"></p>
+</dialog>
+
+<!-- MANAGE CLIENT -->
+<dialog id="dlgManage">
+  <h3 id="manageTitle">Packages</h3>
+  <p class="dsub" id="manageSub"></p>
+  <a class="btn btn-sm btn-wa" id="manageWa" target="_blank" rel="noopener" style="margin-bottom:12px">Send ID &amp; check-in link</a>
+  <div id="manageList" style="max-height:52vh;overflow:auto"></div>
+  <button class="btn btn-ghost" style="margin-top:12px" onclick="dlgManage.close()">Close</button>
+</dialog>
+
+<script>
+/* ====== CONFIG ====== */
+const SUPABASE_URL = "https://gndbfxwjcumkftbultkt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_e2x7PPQQ4iO71ZoyyZk_6A_b_FLKIdu";
+const CHECKIN_URL = new URL('./', location.href).href;
+/* ==================== */
+
+const AWAY_DAYS = 7, ALMOST_LEFT = 2, ALMOST_DAYS = 5, ENDED_WINDOW = 14, VALID_DAYS = 30;
+const PRESETS = [ ['8 sessions', 8, 2400], ['12 sessions', 12, 3600] ];   // [name, sessions, EGP]
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const show = (el,on=true)=>el.classList.toggle('hidden',!on);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const egp = n => Number(n||0).toLocaleString('en');
+let clients = [], packages = [], attendance = [], payments = [], pkgClientId = null, logClientId = null, attnTab = 'almost', newClientId = null;
+
+/* ---------- dates in Cairo time ---------- */
+const ymd = d => new Date(d).toLocaleDateString('en-CA', { timeZone:'Africa/Cairo' });   // YYYY-MM-DD
+const todayStr = () => ymd(new Date());
+const addDays = (s, n) => { const d = new Date(s+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+const diffDays = (a, b) => Math.round((new Date(a+'T12:00:00Z') - new Date(b+'T12:00:00Z')) / 864e5); // a - b
+const nice = (s, opts={day:'numeric',month:'short'}) => new Date(s+'T12:00:00Z').toLocaleDateString('en-GB', {...opts, timeZone:'UTC'});
+const niceAr = s => new Date(s+'T12:00:00Z').toLocaleDateString('ar-EG', {day:'numeric',month:'long',timeZone:'UTC'});
+const timeFmt = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Cairo'});
+
+/* ---------- auth ---------- */
+async function init(){
+  $('checkinLink').textContent = CHECKIN_URL.replace(/^https?:\/\//,''); $('checkinLink').href = CHECKIN_URL;
+  const { data:{ session } } = await db.auth.getSession();
+  if (session) enter();
+}
+$('btnLogin').onclick = async ()=>{
+  $('loginErr').textContent='';
+  const { error } = await db.auth.signInWithPassword({ email:$('email').value.trim(), password:$('password').value });
+  if (error) { $('loginErr').textContent = 'Sign-in failed. Check email and password.'; return; }
+  enter();
+};
+$('password').addEventListener('keydown', e=>{ if (e.key==='Enter') $('btnLogin').click(); });
+$('btnLogout').onclick = async ()=>{ await db.auth.signOut(); location.reload(); };
+
+function enter(){
+  show($('viewLogin'), false); show($('viewDash'), true);
+  $('attDate').value = todayStr();
+  $('topDate').textContent = nice(todayStr(), {weekday:'long', day:'numeric', month:'long'});
+  loadAll();
+  setInterval(loadAll, 30000);
+}
+
+/* ---------- data ---------- */
+let loadErr = false;
+async function loadAll(){
+  const [c,p,a,pay] = await Promise.all([
+    db.from('ze_clients').select('*').order('full_name'),
+    db.from('ze_packages').select('*'),
+    db.from('ze_attendance').select('*').order('checked_in_at',{ascending:false}).limit(5000),
+    db.from('ze_payments').select('*'),
+  ]);
+  loadErr = !!(c.error || p.error || a.error || pay.error);
+  clients = c.data||[]; packages = p.data||[]; attendance = a.data||[]; payments = pay.data||[];
+  render();
+}
+
+const endOf = p => p.expiry_date || (p.start_date ? addDays(String(p.start_date).slice(0,10), VALID_DAYS) : null);
+const usedOf = id => attendance.filter(a=>a.package_id===id).length;
+const paidOf = id => payments.filter(x=>x.package_id===id).reduce((s,x)=>s+Number(x.amount_egp||0),0);
+const isActiveClient = c => c.status!=='archived';
+const pkgName = p => p.package_name || (p.sessions_total + ' sessions');
+const firstName = c => (c.full_name||'').trim().split(' ')[0];
+
+/* Everything the dashboard needs to know about one client */
+function infoFor(c){
+  const today = todayStr();
+  const pk = packages.filter(p=>p.client_id===c.id).map(p=>{
+    const used = usedOf(p.id), end = endOf(p), paid = paidOf(p.id);
+    const lastUse = attendance.find(a=>a.package_id===p.id);
+    return { p, used, paid, owed: Math.max(0, Number(p.price_egp||0) - paid), rem: Math.max(0, p.sessions_total - used), end, inDate: !end || end >= today, lastUse: lastUse ? ymd(lastUse.checked_in_at) : null };
+  }).sort((a,b)=> new Date(b.p.created_at) - new Date(a.p.created_at));
+  const active = pk.filter(x=>x.inDate && x.rem>0);
+  const last = attendance.find(a=>a.client_id===c.id);
+  const lastVisit = last ? ymd(last.checked_in_at) : null;
+  const left = active.length ? active.reduce((s,x)=>s+x.rem,0) : null;
+  const ends = active.length ? active.map(x=>x.end).filter(Boolean).sort()[0] || null : null;
+  const started = active.length ? active.map(x=>String(x.p.start_date||'').slice(0,10)).filter(Boolean).sort()[0] || null : null;
+  const latest = pk[0] || null;
+  const lastEnd = latest ? (latest.end && latest.end < today ? latest.end : (latest.lastUse || latest.end)) : null;
+  const debt = attendance.filter(a=>a.client_id===c.id && a.is_debt).length;
+  const unpaid = pk.filter(x=>x.owed>0 && (x.inDate || diffDays(today, x.end) <= 60));
+  const ref = [lastVisit, started].filter(Boolean).sort().pop() || null;   // later of last visit and package start
+  return {
+    pk, active, left, ends, started, lastVisit, latest, lastEnd, debt, unpaid,
+    owed: unpaid.reduce((s,x)=>s+x.owed,0),
+    current: active.slice().sort((a,b)=>(a.end||'9999').localeCompare(b.end||'9999'))[0] || null,
+    trainedToday: lastVisit === today,
+    daysAway: ref ? diffDays(today, ref) : null,
+    almost: left!==null && (left<=ALMOST_LEFT || (ends && diffDays(ends, today)<=ALMOST_DAYS)),
+    away:   left!==null && ref && diffDays(today, ref) >= AWAY_DAYS,
+    ended:  left===null && lastEnd && diffDays(today, lastEnd) <= ENDED_WINDOW && diffDays(today, lastEnd) >= 0,
+  };
+}
+
+/* ---------- WhatsApp ---------- */
+const waTo = (c, msg) => 'https://wa.me/20' + String(c.phone||'').replace(/\D/g,'').replace(/^0/,'') + '?text=' + encodeURIComponent(msg);
+function waLink(c, kind, info){
+  const first = firstName(c), n = info.left;
+  const leftAr = n===1 ? 'حصة واحدة' : n===2 ? 'حصتين' : n+' حصص';
+  const msg = kind==='almost'
+    ? `أهلاً ${first}، باقتك فاضل فيها ${leftAr}${info.ends ? ' وبتنتهي يوم '+niceAr(info.ends) : ''}. تحب أجهزلك التجديد؟`
+    : kind==='away'
+    ? `أهلاً ${first}، آخر تمرين ليك كان من ${info.daysAway} يوم. كله تمام؟ مستنيك في التمرين الجاي.`
+    : kind==='unpaid'
+    ? `أهلاً ${first}، فاضل ${egp(info.owed)} جنيه من باقتك. تقدر تحوّلهم InstaPay على 01501545118 أو كاش في التمرين. شكراً!`
+    : `أهلاً ${first}، باقتك انتهت يوم ${niceAr(info.lastEnd)}. تحب نجدد ونكمل؟`;
+  return waTo(c, msg);
+}
+function waWelcome(c){
+  return waTo(c, `أهلاً ${firstName(c)}،\nرقم العضوية بتاعك: ${c.member_no}\n\nسجّل حضورك أول ما توصل التمرين من هنا:\n${CHECKIN_URL}\n\nاحفظ اللينك على الشاشة الرئيسية في موبايلك، وهيبقى تسجيل الحضور بضغطة واحدة.\nكوتش زياد`);
+}
+
+/* ---------- render ---------- */
+function render(){
+  const today = todayStr();
+  const dayOf = a => ymd(a.checked_in_at);
+  const byDay = {};
+  attendance.forEach(a=>{ const d = dayOf(a); byDay[d] = (byDay[d]||0)+1; });
+
+  // hero
+  $('nToday').textContent = byDay[today] || 0;
+  let week = 0; for (let i=0;i<7;i++) week += byDay[addDays(today,-i)] || 0;
+  $('nWeek').textContent = week;
+  const month = today.slice(0,7);
+  $('nMonth').textContent = egp(payments.filter(x=>ymd(x.paid_at).slice(0,7)===month).reduce((s,x)=>s+Number(x.amount_egp||0),0));
+  $('monthLbl').nextSibling.textContent = 'in ' + nice(today, {month:'long'});
+  const debtN = attendance.filter(a=>a.is_debt).length;
+  $('nDebt').textContent = debtN; $('debtBox').classList.toggle('warn', debtN>0);
+
+  // bars
+  const days = []; for (let i=13;i>=0;i--) days.push(addDays(today,-i));
+  const max = Math.max(1, ...days.map(d=>byDay[d]||0));
+  const sel = $('attDate').value || today;
+  $('bars').innerHTML = days.map(d=>{
+    const n = byDay[d]||0, h = Math.max(3, Math.round((n/max)*110));
+    return `<button class="bar ${d===sel?'on':''}" data-day="${d}" title="${nice(d,{weekday:'long',day:'numeric',month:'long'})}: ${n}">
+      <span class="n">${n||''}</span><span class="col" style="height:${h}px"></span>
+      <span class="d">${nice(d,{weekday:'short'}).slice(0,2)}<br>${nice(d,{day:'numeric'})}</span></button>`;
+  }).join('');
+  document.querySelectorAll('.bar').forEach(b=> b.onclick = ()=>{ $('attDate').value = b.dataset.day; render(); $('daySec').scrollIntoView({behavior:'smooth', block:'start'}); });
+
+  // clients + attention
+  const q = ($('search').value||'').toLowerCase().trim();
+  const active = clients.filter(isActiveClient);
+  const infos = new Map(active.map(c=>[c.id, infoFor(c)]));
+  $('nActive').textContent = active.filter(c=>infos.get(c.id).left!==null).length;
+
+  const groups = {
+    almost: active.filter(c=>infos.get(c.id).almost).sort((a,b)=> (infos.get(a.id).left - infos.get(b.id).left)),
+    away:   active.filter(c=>infos.get(c.id).away).sort((a,b)=> infos.get(b.id).daysAway - infos.get(a.id).daysAway),
+    ended:  active.filter(c=>infos.get(c.id).ended).sort((a,b)=> (infos.get(b.id).lastEnd||'').localeCompare(infos.get(a.id).lastEnd||'')),
+    unpaid: active.filter(c=>infos.get(c.id).owed>0).sort((a,b)=> infos.get(b.id).owed - infos.get(a.id).owed),
+  };
+  $('tAlmost').textContent = groups.almost.length; $('tAway').textContent = groups.away.length;
+  $('tEnded').textContent = groups.ended.length; $('tUnpaid').textContent = groups.unpaid.length;
+  $('nAttn').textContent = new Set([...groups.almost, ...groups.away, ...groups.ended, ...groups.unpaid].map(c=>c.id)).size;
+  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('on', t.dataset.tab===attnTab));
+  const g = groups[attnTab];
+  const emptyMsg = { almost:'Nobody is close to finishing.', away:'Everyone with a package has trained in the last 7 days.', ended:'No packages ended without a renewal in the last 14 days.', unpaid:'Every package is paid.' };
+  $('attnList').innerHTML = loadErr && !clients.length ? '<div class="empty">Could not load data. If this is the first time, the database setup has not been run yet.</div>'
+   : g.length ? g.map(c=>{
+    const i = infos.get(c.id);
+    const detail = attnTab==='almost'
+      ? `${i.left} left${i.ends ? ' · ends '+nice(i.ends) : ''}${i.current ? ' · '+esc(pkgName(i.current.p)) : ''}`
+      : attnTab==='away'
+      ? ((i.lastVisit && (!i.started || i.lastVisit >= i.started)) ? `${i.daysAway} days since last session · ${nice(i.lastVisit)}` : `No session since the package started ${i.daysAway} days ago`)
+      : attnTab==='unpaid'
+      ? `${egp(i.owed)} EGP owed · ${i.unpaid.map(x=>esc(pkgName(x.p))).join(', ')}`
+      : `${i.latest ? esc(pkgName(i.latest.p))+' · ' : ''}ended ${nice(i.lastEnd)}`;
+    const act = attnTab==='unpaid'
+      ? `<button class="btn btn-sm btn-ghost" onclick="openManage('${c.id}')">Mark paid</button>`
+      : `<button class="btn btn-sm btn-ghost" onclick="openPkg('${c.id}')">+ Package</button>`;
+    return `<div class="item"><div class="who"><div class="name">${esc(c.full_name)}</div>
+      <div class="meta">${c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${detail}</div></div>
+      <div class="actions">
+        <a class="btn btn-sm btn-wa" href="${waLink(c, attnTab, i)}" target="_blank" rel="noopener">WhatsApp</a>${act}
+      </div></div>`;
+  }).join('') : `<div class="empty">${emptyMsg[attnTab]}</div>`;
+
+  // selected day
+  $('dayTitle').textContent = sel===today ? 'Today' : nice(sel, {weekday:'long', day:'numeric', month:'short'});
+  const dayRows = attendance.filter(a=>dayOf(a)===sel).sort((a,b)=> new Date(a.checked_in_at)-new Date(b.checked_in_at));
+  $('dayTitle').insertAdjacentHTML('beforeend', `<span class="count">${dayRows.length}</span>`);
+  $('dayList').innerHTML = dayRows.length ? dayRows.map(a=>{
+    const c = clients.find(x=>x.id===a.client_id); const p = packages.find(x=>x.id===a.package_id);
+    return `<div class="item"><div class="side" style="gap:16px"><span class="time">${timeFmt(a.checked_in_at)}</span>
+      <div class="who"><div class="name">${c?esc(c.full_name):'—'}</div>
+      <div class="meta">${c&&c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${p?esc(pkgName(p)):'No package'} · ${a.method==='self'?'Self check-in':'Logged by coach'}</div>
+      ${a.is_debt?'<div class="chips"><span class="chip warn">owed session</span></div>':''}</div></div>
+      <div class="actions"><button class="btn btn-sm btn-ghost" title="Remove this session" onclick="deleteAttendance('${a.id}')">Remove</button></div></div>`;
+  }).join('') : '<div class="empty">No sessions on this day.</div>';
+
+  // clients
+  const list = active.filter(c=> !q || (c.full_name||'').toLowerCase().includes(q) || String(c.phone||'').includes(q) || String(c.member_no||'').includes(q));
+  $('nMembers').textContent = active.length;
+  $('clientList').innerHTML = list.length ? list.map(c=>{
+    const i = infos.get(c.id);
+    const chips = [
+      i.trainedToday ? `<span class="chip gold">trained today</span>` : '',
+      i.debt ? `<span class="chip warn">${i.debt} owed</span>` : '',
+      i.owed ? `<span class="chip warn">${egp(i.owed)} EGP not paid</span>` : '',
+      i.almost ? `<span class="chip gold">almost finishing</span>` : '',
+      i.away ? `<span class="chip">${i.daysAway}d away</span>` : '',
+      i.ended ? `<span class="chip">ended ${nice(i.lastEnd)}</span>` : '',
+    ].join('');
+    const pkgLine = i.current ? `${esc(pkgName(i.current.p))}${i.ends?' · ends '+nice(i.ends):''}` : 'No active package';
+    const n = i.left===null?0:i.left;
+    return `<div class="item member">
+      <div class="mtop">
+        <div class="who"><div class="name">${esc(c.full_name)}</div>
+          <div class="meta">${c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${esc(c.phone)}</div>
+          <div class="meta">${pkgLine} · last session ${i.lastVisit ? nice(i.lastVisit) : 'never'}</div>
+          ${chips?'<div class="chips">'+chips+'</div>':''}</div>
+        <div class="left"><b class="${n===0?'zero':''}">${n}</b><span>${n===1?'session':'sessions'} left</span></div>
+      </div>
+      <div class="actions macts">
+        <button class="btn btn-sm" onclick="openLog('${c.id}')">Log session</button>
+        <button class="btn btn-sm btn-ghost" onclick="openPkg('${c.id}')">+ Package</button>
+        <button class="btn btn-sm btn-ghost" onclick="openManage('${c.id}')">Details</button>
+        <button class="btn btn-sm btn-ghost" title="Remove client" aria-label="Remove client" onclick="removeClient('${c.id}')">✕</button>
+      </div></div>`;
+  }).join('') : `<div class="empty">${clients.length ? 'No clients match.' : 'No clients yet. Tap “+ Client” to add your first one.'}</div>`;
+}
+$('search').oninput = render;
+$('attDate').onchange = render;
+document.querySelectorAll('.tab').forEach(t=> t.onclick = ()=>{ attnTab = t.dataset.tab; render(); });
+
+/* ---------- new client ---------- */
+$('btnAddClient').onclick = ()=>{ $('clientErr').textContent=''; show($('clientForm'),true); show($('clientDone'),false); dlgClient.showModal(); };
+$('btnSaveClient').onclick = async ()=>{
+  const name = $('cName').value.trim().replace(/\s+/g,' ');
+  const phone = $('cPhone').value.replace(/\D/g,'');
+  if (!name || !/^01\d{9}$/.test(phone)) { $('clientErr').textContent='Full name and a valid 11-digit phone are required.'; return; }
+  $('btnSaveClient').disabled = true;
+  const { data, error } = await db.from('ze_clients').insert({ full_name:name, phone, status:'active' }).select().single();
+  $('btnSaveClient').disabled = false;
+  if (error){ $('clientErr').textContent = error.code==='23505' ? 'This phone is already registered.' : 'Could not save: ' + error.message; return; }
+  $('cName').value=''; $('cPhone').value='';
+  newClientId = data.id;
+  $('cDoneName').textContent = data.full_name;
+  $('cDoneId').textContent = data.member_no || '—';
+  $('cDoneWa').href = waWelcome(data);
+  show($('clientForm'),false); show($('clientDone'),true);
+  loadAll();
+};
+$('btnClientToPkg').onclick = ()=>{ dlgClient.close(); openPkg(newClientId); };
+
+/* ---------- new package + payment ---------- */
+$('pPreset').innerHTML = PRESETS.map((x,i)=>`<option value="${i}">${x[0]} · ${egp(x[2])} EGP</option>`).join('') + '<option value="custom">Custom</option>';
+function applyPreset(){
+  const v = $('pPreset').value;
+  if (v==='custom'){ $('pSessions').value=''; $('pPrice').value=''; }
+  else { const x = PRESETS[+v]; $('pSessions').value = x[1]; $('pPrice').value = x[2]; }
+  $('pExpiry').value = addDays(todayStr(), VALID_DAYS);
+  summary();
+}
+function currentName(){
+  const v = $('pPreset').value, s = parseInt($('pSessions').value)||0;
+  if (v!=='custom' && PRESETS[+v][1]===s) return PRESETS[+v][0];
+  return s + (s===1?' session':' sessions');
+}
+function summary(){
+  const s = parseInt($('pSessions').value)||0, pr = parseFloat($('pPrice').value)||0;
+  $('pSummary').textContent = s ? `${currentName()} · ${egp(pr)} EGP · ends ${$('pExpiry').value?nice($('pExpiry').value):'—'}` : '';
+}
+$('pPreset').onchange = applyPreset;
+['pSessions','pPrice','pExpiry'].forEach(id=> $(id).oninput = summary);
+
+function openPkg(clientId){
+  pkgClientId = clientId;
+  const c = clients.find(x=>x.id===clientId);
+  $('pkgTitle').textContent = 'New package' + (c ? ' · ' + firstName(c) : '');
+  $('pkgErr').textContent=''; $('pMethod').value='cash';
+  const latest = c ? infoFor(c).latest : null;     // start from what they had last time
+  const i = latest ? PRESETS.findIndex(x=> x[0]===latest.p.package_name) : -1;
+  $('pPreset').value = i>-1 ? String(i) : (latest ? 'custom' : '0');
+  applyPreset();
+  if (latest && i===-1){ $('pSessions').value = latest.p.sessions_total; $('pPrice').value = latest.p.price_egp; summary(); }
+  dlgPkg.showModal();
+}
+$('btnSavePkg').onclick = async ()=>{
+  const sessions = parseInt($('pSessions').value), price = parseFloat($('pPrice').value)||0;
+  if (!sessions || sessions<1){ $('pkgErr').textContent='Enter the number of sessions.'; return; }
+  $('btnSavePkg').disabled = true;
+  const res = await db.from('ze_packages').insert({ client_id: pkgClientId, package_name: currentName(), sessions_total: sessions, price_egp: price,
+    start_date: todayStr(), expiry_date: $('pExpiry').value || addDays(todayStr(), VALID_DAYS) }).select().single();
+  if (res.error){ $('btnSavePkg').disabled = false; $('pkgErr').textContent='Could not save the package: ' + res.error.message; return; }
+  const pkg = res.data, method = $('pMethod').value;
+  if (method!=='unpaid' && price>0){
+    await db.from('ze_payments').insert({ client_id:pkgClientId, package_id:pkg.id, amount_egp:price, method });
+  }
+  const debtRows = attendance.filter(a=>a.client_id===pkgClientId && a.is_debt).sort((a,b)=> new Date(a.checked_in_at)-new Date(b.checked_in_at));
+  if (debtRows.length){
+    const n = Math.min(debtRows.length, sessions);
+    if (confirm('This client has ' + debtRows.length + ' owed session(s). Deduct ' + n + ' from the new package to settle them?')){
+      await db.from('ze_attendance').update({ package_id: pkg.id, is_debt: false }).in('id', debtRows.slice(0, n).map(a=>a.id));
+    }
+  }
+  $('btnSavePkg').disabled = false;
+  dlgPkg.close(); loadAll();
+};
+
+/* ---------- log a session (coach) ---------- */
+function openLog(clientId){
+  logClientId = clientId;
+  const c = clients.find(x=>x.id===clientId), i = c ? infoFor(c) : null;
+  $('logTitle').textContent = 'Log session · ' + (c ? firstName(c) : '');
+  $('logSub').textContent = i && i.current ? `Deducts 1 from ${pkgName(i.current.p)} (${i.left} left).` : 'No active package: this will be recorded as an owed session.';
+  $('logDate').value = todayStr(); $('logDate').max = todayStr(); $('logErr').textContent = '';
+  logNote(); dlgLog.showModal();
+}
+function logNote(){
+  const d = $('logDate').value;
+  const n = attendance.filter(a=>a.client_id===logClientId && ymd(a.checked_in_at)===d).length;
+  $('logNote').textContent = n ? `Already ${n} session${n>1?'s':''} logged on this day.` : '';
+}
+$('logDate').oninput = logNote;
+$('btnSaveLog').onclick = async ()=>{
+  const d = $('logDate').value || todayStr();
+  if (d > todayStr()){ $('logErr').textContent = 'The date can’t be in the future.'; return; }
+  const c = clients.find(x=>x.id===logClientId);
+  const open = c ? infoFor(c).current : null;   // the active package that ends first
+  const when = d===todayStr() ? new Date().toISOString() : new Date(d+'T10:00:00Z').toISOString();   // past days: noon Cairo
+  $('btnSaveLog').disabled = true;
+  const { error } = await db.from('ze_attendance').insert({ client_id: logClientId, package_id: open?open.p.id:null, method:'coach', is_debt: !open, checked_in_at: when });
+  $('btnSaveLog').disabled = false;
+  if (error){ $('logErr').textContent = 'Could not log: ' + error.message; return; }
+  dlgLog.close(); loadAll();
+};
+
+/* ---------- client details, payments, removal ---------- */
+async function removeClient(id){
+  const c = clients.find(x=>x.id===id), n = c?c.full_name:'this client';
+  if (!confirm('Remove ' + n + ' completely? This deletes their packages, payments and session history. This cannot be undone.')) return;
+  if (!confirm('Final confirmation: delete ' + n + ' and all their history?')) return;
+  await db.from('ze_clients').delete().eq('id', id);
+  loadAll();
+}
+function openManage(clientId){
+  const c = clients.find(x=>x.id===clientId);
+  $('manageTitle').textContent = c ? c.full_name : 'Packages';
+  $('manageSub').textContent = c ? ('Member #' + (c.member_no||'—') + ' · ' + c.phone) : '';
+  $('manageWa').href = c ? waWelcome(c) : '#';
+  const pk = c ? infoFor(c).pk : [];
+  $('manageList').innerHTML = pk.length ? pk.map(x=>{
+    const state = !x.inDate ? 'ended' : x.rem===0 ? 'used up' : 'active';
+    const pay = Number(x.p.price_egp)>0 ? (x.owed>0 ? `<span style="color:var(--warn)">${egp(x.owed)} EGP not paid</span>` : 'paid') : '';
+    return `<div class="item" style="padding:12px 2px;flex-direction:column;align-items:stretch">
+      <div class="who"><div class="name" style="font-size:1rem">${esc(pkgName(x.p))}</div>
+        <div class="meta">${x.used}/${x.p.sessions_total} used · ${state}${Number(x.p.price_egp)>0?' · '+egp(x.p.price_egp)+' EGP':''}${pay?' · '+pay:''}</div>
+        <div class="meta">${x.p.start_date?nice(String(x.p.start_date).slice(0,10)):''}${x.end?' → '+nice(x.end):''}</div></div>
+      <div class="row-btns">
+        ${x.owed>0?`<button class="btn btn-sm" onclick="markPaid('${x.p.id}','cash')">Paid cash</button><button class="btn btn-sm btn-ghost" onclick="markPaid('${x.p.id}','instapay')">Paid InstaPay</button>`:''}
+        <button class="btn btn-sm btn-ghost" onclick="deletePackage('${x.p.id}', ${x.used})">Delete</button></div></div>`;
+  }).join('') : '<p class="muted">No packages yet.</p>';
+  if (!dlgManage.open) dlgManage.showModal();
+}
+async function markPaid(pkgId, method){
+  const p = packages.find(x=>x.id===pkgId); if (!p) return;
+  const owed = Math.max(0, Number(p.price_egp||0) - paidOf(pkgId));
+  if (!owed) return;
+  await db.from('ze_payments').insert({ client_id:p.client_id, package_id:pkgId, amount_egp:owed, method });
+  await loadAll(); openManage(p.client_id);
+}
+async function deletePackage(id, usedCount){
+  const warn = usedCount>0
+    ? 'This package has ' + usedCount + ' logged sessions. Deleting it keeps the session records but detaches them. Delete package?'
+    : 'Delete this package?';
+  if (!confirm(warn)) return;
+  await db.from('ze_packages').delete().eq('id', id);
+  await loadAll(); dlgManage.close();
+}
+async function deleteAttendance(id){
+  const a = attendance.find(x=>x.id===id), c = a ? clients.find(x=>x.id===a.client_id) : null;
+  if (!confirm('Remove this session' + (c?(' for '+c.full_name):'') + '? It goes back to the package.')) return;
+  await db.from('ze_attendance').delete().eq('id', id);
+  loadAll();
+}
+
+init();
+</script>
+</body>
+</html>

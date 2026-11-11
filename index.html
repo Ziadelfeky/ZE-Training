@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0c0b0a">
+<meta name="robots" content="noindex, nofollow">
+<title>Check-in · Ziad Elfeky</title>
+<meta name="apple-mobile-web-app-title" content="Check-in · ZF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="./zf-favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./zf-icon-192.png">
+<link rel="apple-touch-icon" href="./zf-apple-touch.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Lora:ital,wght@0,500;0,600;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0c0b0a; --panel:#161411; --panel2:#1c1915; --line:rgba(242,237,228,.10); --line2:rgba(242,237,228,.18);
+    --gold:#cfb27c; --gold-soft:rgba(207,178,124,.10); --gold-line:rgba(207,178,124,.35);
+    --text:#f2ede4; --muted:#b0a99c; --soft:#938c7f;
+    --ok:#9cc49a; --warn:#e3967f; --warn-soft:rgba(227,150,127,.10);
+    --serif:'Lora',Georgia,serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:radial-gradient(900px 520px at 50% -10%, rgba(207,178,124,.08), transparent 65%), var(--bg);
+    color:var(--text); font-family:'Poppins','Cairo',sans-serif;
+    min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:72px 20px 28px; -webkit-font-smoothing:antialiased;
+  }
+  html[lang=ar] body{font-family:'Cairo','Poppins',sans-serif}
+  .lang-toggle{position:fixed; top:16px; inset-inline-end:16px; display:flex; border:1px solid var(--line2); border-radius:20px; overflow:hidden}
+  .lang-toggle button{background:transparent; border:none; color:var(--muted); font-family:'Poppins',sans-serif; font-size:.74rem; letter-spacing:.06em; padding:7px 15px; cursor:pointer}
+  .lang-toggle button.on{background:var(--gold); color:#14110d; font-weight:600}
+  .mark{width:58px; margin-bottom:14px; direction:ltr}
+  .mark svg{display:block; width:100%; height:auto}
+  .mark .z{stroke:var(--text)} .mark .f{stroke:var(--gold)}
+  .brand{font-family:var(--serif); font-weight:500; font-size:1.25rem; letter-spacing:-.005em; direction:ltr}
+  .brand-sub{font-family:'Poppins',sans-serif; font-size:.64rem; font-weight:500; letter-spacing:.26em; text-transform:uppercase; color:var(--gold); margin-top:5px; direction:ltr}
+  .tagline{font-family:var(--serif); font-style:italic; color:var(--muted); font-size:.86rem; margin:14px 0 32px; text-align:center; direction:ltr}
+  .card{
+    width:100%; max-width:390px; background:var(--panel); border:1px solid var(--line2);
+    border-radius:22px; padding:34px 26px 28px; text-align:center; position:relative;
+  }
+  .card::before{content:''; position:absolute; top:-1px; left:50%; transform:translateX(-50%); width:44px; height:2px; background:var(--gold); border-radius:2px}
+  .eyebrow{font-family:'Poppins',sans-serif; font-size:.68rem; font-weight:500; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin-bottom:10px}
+  html[lang=ar] .eyebrow{font-family:'Cairo',sans-serif; letter-spacing:.04em; font-size:.8rem}
+  h1{font-family:var(--serif); font-weight:500; font-size:1.7rem; line-height:1.2; margin-bottom:8px}
+  html[lang=ar] h1{font-family:'Cairo',sans-serif; font-weight:700; font-size:1.5rem}
+  .sub{color:var(--muted); font-size:.9rem; line-height:1.6; margin-bottom:24px}
+  .key{
+    width:100%; padding:16px; border-radius:14px; border:1px solid var(--line2); background:var(--bg); color:var(--text);
+    font-family:'Poppins',sans-serif; font-size:1.3rem; text-align:center; letter-spacing:.16em; direction:ltr; outline:none; transition:border-color .2s;
+  }
+  .key:focus{border-color:var(--gold)}
+  .key::placeholder{color:var(--soft); letter-spacing:.04em; font-size:1rem}
+  html[lang=ar] .key::placeholder{font-family:'Cairo',sans-serif}
+  .hint{color:var(--soft); font-size:.76rem; margin-top:10px}
+  button.action{
+    width:100%; margin-top:14px; padding:16px; border:none; border-radius:14px; cursor:pointer;
+    background:var(--gold); color:#14110d; font-family:inherit; font-size:1.02rem; font-weight:700; transition:filter .2s, opacity .2s;
+  }
+  button.action:hover{filter:brightness(1.06)}
+  button.action:disabled{opacity:.45; cursor:default}
+  .ghost{background:transparent !important; border:1px solid var(--line2) !important; color:var(--muted) !important; font-weight:500 !important}
+  .msg{margin-top:16px; font-size:.9rem; min-height:1.4em; line-height:1.6}
+  .msg.err{color:var(--warn)}
+  .greet{font-family:var(--serif); font-size:1.6rem; font-weight:500; margin-bottom:4px}
+  html[lang=ar] .greet{font-family:'Cairo',sans-serif; font-weight:700; font-size:1.4rem}
+  .member{display:inline-flex; align-items:center; gap:8px; margin:6px 0 18px; padding:5px 14px; border:1px solid var(--gold-line); border-radius:20px; font-size:.78rem; color:var(--muted)}
+  .member b{font-family:'Poppins',sans-serif; color:var(--gold); letter-spacing:.14em; font-weight:600; direction:ltr}
+  .counter{font-family:var(--serif); font-weight:500; font-size:5.4rem; line-height:1; color:var(--gold); margin:14px 0 6px}
+  .counter.low{color:var(--warn)}
+  .counter-label{color:var(--muted); font-size:.86rem; letter-spacing:.03em}
+  .status-ok{color:var(--ok); font-size:.92rem; margin-top:18px}
+  .tip{margin-top:18px; padding:12px 14px; border-radius:12px; background:var(--gold-soft); border:1px solid var(--gold-line); font-size:.84rem; line-height:1.6; color:var(--text)}
+  .tip b{color:var(--gold); letter-spacing:.14em; font-family:'Poppins',sans-serif; direction:ltr; display:inline-block}
+  .spinner{width:24px;height:24px;border:2.5px solid var(--line2);border-top-color:var(--gold);border-radius:50%;margin:16px auto 0;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){.spinner{animation-duration:2s}}
+  .renew{margin-top:24px; padding:20px 18px 16px; border-radius:16px; background:var(--panel2); border:1px solid var(--gold-line); text-align:center}
+  .renew-title{font-weight:600; font-size:1rem; margin-bottom:4px}
+  .renew-body{color:var(--muted); font-size:.84rem; margin-bottom:14px; line-height:1.6}
+  .renew-pay{display:flex; flex-direction:column; gap:3px; align-items:center; width:100%; padding:13px; border-radius:12px; cursor:pointer; background:var(--bg); border:1px solid var(--gold-line); font-family:inherit; color:inherit}
+  .renew-pay-label{color:var(--gold); font-size:.66rem; letter-spacing:.24em; text-transform:uppercase; font-weight:600; font-family:'Poppins',sans-serif}
+  .renew-pay-number{color:var(--text); font-size:1.32rem; letter-spacing:.14em; font-weight:600; direction:ltr; font-family:'Poppins',sans-serif}
+  .renew-hint{color:var(--soft); font-size:.74rem; margin-top:10px; min-height:1em}
+  .hist-valid{color:var(--gold); font-size:.82rem; margin-top:8px}
+  .hist-list{margin:20px 0 4px; max-height:34vh; overflow:auto; text-align:start}
+  .hist-row{display:flex; justify-content:space-between; align-items:center; padding:11px 4px; border-bottom:1px solid var(--line); font-size:.9rem}
+  .hist-row:last-child{border-bottom:none}
+  .hist-row .n{color:var(--soft); font-size:.76rem; font-family:'Poppins',sans-serif}
+  .hist-rule{color:var(--muted); font-size:.76rem; line-height:1.7; margin-top:14px; padding-top:14px; border-top:1px solid var(--line)}
+  .hidden{display:none !important}
+  footer{margin-top:30px; color:var(--soft); font-size:.66rem; letter-spacing:.2em; font-family:'Poppins',sans-serif; text-transform:uppercase; text-align:center; direction:ltr}
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button id="langAr">عربي</button>
+  <button id="langEn" class="on">EN</button>
+</div>
+
+<div class="mark" aria-hidden="true"><svg viewBox="4 46 228 160"><defs><mask id="zfcut" maskUnits="userSpaceOnUse" x="0" y="0" width="240" height="240"><rect width="240" height="240" fill="#fff"></rect><path d="M20 168 L224 92" stroke="#000" stroke-width="6"></path></mask></defs><g mask="url(#zfcut)"><g transform="skewX(-10) translate(18 0)"><g fill="none" stroke-linecap="butt" stroke-linejoin="miter" stroke-width="24"><path class="z" d="M36 66 H130 L46 174 H140"></path><path class="f" d="M168 186 V66 H216 M168 120 H206"></path></g></g></g></svg></div>
+<div class="brand">Ziad Elfeky</div>
+<div class="brand-sub">Private Training</div>
+<div class="tagline">Fix the root cause. Build the body. Perform for life.</div>
+
+<div class="card">
+
+  <!-- STEP 1: member ID or phone -->
+  <div id="stepPhone">
+    <div class="eyebrow" data-i18n="eyebrow"></div>
+    <h1 data-i18n="title"></h1>
+    <p class="sub" data-i18n="subtitle"></p>
+    <input class="key" type="tel" id="phone" inputmode="numeric" data-i18n-ph="keyPh" maxlength="14" autocomplete="off">
+    <p class="hint" data-i18n="keyHint"></p>
+    <button class="action" id="btnLookup" data-i18n="continue"></button>
+    <p class="msg" id="msgPhone"></p>
+  </div>
+
+  <!-- STEP 2: confirm -->
+  <div id="stepConfirm" class="hidden">
+    <p class="greet" id="confirmName"></p>
+    <div class="member hidden" id="confirmMember"><span data-i18n="memberLabel"></span><b id="confirmMemberNo"></b></div>
+    <p class="sub" id="confirmInfo"></p>
+    <button class="action" id="btnCheckin" data-i18n="confirm"></button>
+    <button class="action ghost" id="btnHist1" data-i18n="histBtn"></button>
+    <button class="action ghost" id="btnBack" data-i18n="notMe"></button>
+    <p class="msg" id="msgConfirm"></p>
+  </div>
+
+  <!-- STEP 3: done -->
+  <div id="stepDone" class="hidden">
+    <p class="greet" id="doneName"></p>
+    <div id="doneCounterWrap">
+      <div class="counter" id="doneCounter">0</div>
+      <div class="counter-label" data-i18n="remainingLabel"></div>
+    </div>
+    <p class="status-ok hidden" id="doneOk"></p>
+    <div class="tip hidden" id="doneTip"></div>
+
+    <button class="action ghost" id="btnHist2" data-i18n="histBtn" style="margin-top:22px"></button>
+
+    <div class="renew hidden" id="renewCard">
+      <p class="renew-title" id="renewTitle"></p>
+      <p class="renew-body" id="renewBody"></p>
+      <button class="renew-pay" id="renewPay">
+        <span class="renew-pay-label">InstaPay</span>
+        <span class="renew-pay-number">01501545118</span>
+      </button>
+      <p class="renew-hint" id="renewHint"></p>
+    </div>
+  </div>
+
+  <!-- STEP H: my sessions -->
+  <div id="stepHist" class="hidden">
+    <div class="eyebrow" data-i18n="eyebrowHist"></div>
+    <h1 data-i18n="histTitle"></h1>
+    <div class="counter" id="histRemaining" style="font-size:3.6rem;margin:10px 0 4px">0</div>
+    <div class="counter-label" id="histOf"></div>
+    <div class="hist-valid" id="histValid"></div>
+    <div class="hist-list" id="histList"></div>
+    <p class="hist-rule" data-i18n="histRule"></p>
+    <button class="action ghost" id="btnHistBack" data-i18n="histBack"></button>
+  </div>
+
+  <div class="spinner hidden" id="spin"></div>
+</div>
+
+<footer>Strength &amp; Conditioning · Alexandria</footer>
+
+<script>
+/* ====== CONFIG ====== */
+const SUPABASE_URL = "https://gndbfxwjcumkftbultkt.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_e2x7PPQQ4iO71ZoyyZk_6A_b_FLKIdu";
+/* ==================== */
+
+const T = {
+  ar: {
+    eyebrow:'تسجيل الحضور', eyebrowHist:'باقتك',
+    title:'أهلاً بيك في التمرين',
+    subtitle:'اكتب رقم العضوية أو رقم موبايلك المسجّل',
+    keyPh:'رقم العضوية أو الموبايل',
+    keyHint:'رقم العضوية 4 أرقام · الموبايل 11 رقم',
+    continue:'متابعة',
+    confirm:'تأكيد الحضور',
+    notMe:'مش أنا — رجوع',
+    memberLabel:'رقم العضوية',
+    remainingLabel:'حصص متبقية في باقتك',
+    hello:n=>'أهلاً، '+n,
+    remainingInfo:r=>'باقتك فيها '+r+' حصص متبقية',
+    expiredInfo:'مفيش باقة سارية دلوقتي — هنسجّل حضورك النهارده وتقدر تجدد مع كوتش زياد',
+    alreadyToday:'إنت مسجّل حضورك النهارده بالفعل ✓',
+    checkedOk:'✓ تم تسجيل حضورك — تمرين موفق',
+    invalidKey:'اكتب رقم العضوية (4 أرقام) أو موبايل من 11 رقم',
+    notFound:'الرقم ده مش مسجّل — كلّم كوتش زياد يضيفك',
+    connErr:'حصلت مشكلة في الاتصال — جرّب تاني',
+    genErr:'حصلت مشكلة — كلّم كوتش زياد',
+    tip:n=>'المرة الجاية سجّل أسرع برقم العضوية: <b>'+n+'</b>',
+    renewLast:'دي آخر حصة في باقتك',
+    renewOne:'فاضل لك حصة واحدة',
+    renewDone:'باقتك اكتملت — حضور النهارده متسجّل',
+    renewExpired:'انتهت مدة باقتك (30 يوم) — حضور النهارده متسجّل',
+    renewBody:'جدد باقتك عن طريق InstaPay أو كاش مع كوتش زياد',
+    renewCopy:'اضغط على الرقم للنسخ',
+    renewCopied:'تم نسخ الرقم ✓',
+    histBtn:'سجل حضوري',
+    histTitle:'سجل الحضور',
+    histOf:(r,t)=>r+' من '+t+' حصص متبقية',
+    histValidUntil:d=>'الباقة صالحة حتى '+d,
+    histNoPkg:'لا توجد باقة سارية حالياً',
+    histEmpty:'لا يوجد حضور مسجّل بعد',
+    histRule:'الباقة صالحة لمدة 30 يوم من تاريخ الدفع أو حتى انتهاء الحصص — أيهما أقرب. الحصص غير المستخدمة لا تُرحَّل للباقة الجديدة.',
+    histBack:'رجوع',
+  },
+  en: {
+    eyebrow:'Check-in', eyebrowHist:'Your package',
+    title:'Ready to train',
+    subtitle:'Enter your member ID or registered phone number',
+    keyPh:'Member ID or phone',
+    keyHint:'Member ID: 4 digits · Phone: 11 digits',
+    continue:'Continue',
+    confirm:'Confirm check-in',
+    notMe:'Not me — back',
+    memberLabel:'Member ID',
+    remainingLabel:'Sessions left in your package',
+    hello:n=>'Hello, '+n,
+    remainingInfo:r=>'Your package has '+r+' sessions left',
+    expiredInfo:'No active package right now. Today will still be logged, and you can renew with Coach Ziad.',
+    alreadyToday:'You are already checked in today ✓',
+    checkedOk:'✓ Checked in. Have a great session',
+    invalidKey:'Enter your 4-digit member ID or 11-digit phone number',
+    notFound:'Not registered yet. Ask Coach Ziad to add you',
+    connErr:'Connection problem. Try again',
+    genErr:'Something went wrong. Please tell Coach Ziad',
+    tip:n=>'Next time, check in faster with your member ID: <b>'+n+'</b>',
+    renewLast:'This was the last session in your package',
+    renewOne:'One session left in your package',
+    renewDone:'Your package is complete. Today is logged',
+    renewExpired:'Your package period has ended (30 days). Today is logged',
+    renewBody:'Renew via InstaPay, or in cash with Coach Ziad',
+    renewCopy:'Tap the number to copy',
+    renewCopied:'Number copied ✓',
+    histBtn:'My sessions',
+    histTitle:'My sessions',
+    histOf:(r,t)=>r+' of '+t+' sessions left',
+    histValidUntil:d=>'Package valid until '+d,
+    histNoPkg:'No active package at the moment',
+    histEmpty:'No sessions recorded yet',
+    histRule:'Your package lasts 30 days from the payment date, or until all sessions are used, whichever comes first. Unused sessions don’t carry over to a new package.',
+    histBack:'Back',
+  }
+};
+
+const store = { get:k=>{ try{return localStorage.getItem(k)}catch(e){return null} }, set:(k,v)=>{ try{localStorage.setItem(k,v)}catch(e){} }, del:k=>{ try{localStorage.removeItem(k)}catch(e){} } };
+let lang = store.get('ze_lang') || 'en';
+const t = key => T[lang][key];
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.documentElement.dir = (lang==='ar') ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = T[lang][el.dataset.i18n]; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = T[lang][el.dataset.i18nPh]; });
+  document.getElementById('langAr').classList.toggle('on', lang==='ar');
+  document.getElementById('langEn').classList.toggle('on', lang==='en');
+}
+document.getElementById('langAr').onclick = ()=>{ lang='ar'; store.set('ze_lang','ar'); applyLang(); if (lastLookup) showConfirm(lastLookup); };
+document.getElementById('langEn').onclick = ()=>{ lang='en'; store.set('ze_lang','en'); applyLang(); if (lastLookup) showConfirm(lastLookup); };
+applyLang();
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ persistSession:false } });
+const $ = id => document.getElementById(id);
+const show = (el,on=true)=>el.classList.toggle('hidden',!on);
+const clean = k => { k = String(k||'').replace(/\D/g,''); return /^20\d{10}$/.test(k) ? '0'+k.slice(2) : k; };
+const isPhone = k => /^01\d{9}$/.test(k);
+const isId = k => /^\d{4}$/.test(k);
+let currentKey = '', lastLookup = null;
+
+async function rpc(name, key){
+  const { data, error } = await db.rpc(name, { p_key: key });
+  if (error) throw error;
+  return data;
+}
+function setMember(wrapId, noId, n){
+  if (n){ $(noId).textContent = n; show($(wrapId), true); } else show($(wrapId), false);
+}
+function err(id, key){ $(id).textContent = t(key); $(id).className = 'msg err'; }
+
+function showConfirm(data){
+  $('confirmName').textContent = t('hello')(data.first_name);
+  setMember('confirmMember', 'confirmMemberNo', data.member_no);
+  if (data.already_today) {
+    $('confirmInfo').textContent = t('alreadyToday');
+    show($('btnCheckin'), false);
+  } else {
+    $('confirmInfo').textContent = data.remaining > 0 ? t('remainingInfo')(data.remaining) : t('expiredInfo');
+    show($('btnCheckin'), true);
+  }
+}
+
+async function lookup(key, silent){
+  $('msgPhone').textContent = '';
+  if (!isPhone(key) && !isId(key)) { if (!silent) err('msgPhone','invalidKey'); return; }
+  busy(true, 'btnLookup');
+  try {
+    const data = await rpc('ze_lookup_key', key);
+    if (!data.found) { if (!silent) err('msgPhone','notFound'); else store.del('ze_key'); return; }
+    currentKey = key; lastLookup = data;
+    store.set('ze_key', key);
+    showConfirm(data);
+    $('msgConfirm').textContent = '';
+    show($('stepPhone'), false); show($('stepConfirm'), true);
+  } catch(e) {
+    if (!silent) err('msgPhone','connErr');
+  } finally { busy(false, 'btnLookup'); }
+}
+$('btnLookup').onclick = () => lookup(clean($('phone').value), false);
+$('phone').addEventListener('keydown', e=>{ if (e.key==='Enter') $('btnLookup').click(); });
+
+$('btnBack').onclick = () => {
+  store.del('ze_key'); lastLookup = null;
+  $('phone').value = '';
+  show($('stepConfirm'), false); show($('stepPhone'), true);
+};
+
+$('btnCheckin').onclick = async () => {
+  busy(true, 'btnCheckin');
+  try {
+    const data = await rpc('ze_checkin_key', currentKey);
+    if (!data.ok) {
+      $('msgConfirm').textContent = data.reason === 'already_today' ? t('alreadyToday') : t('genErr');
+      $('msgConfirm').className = 'msg err';
+      return;
+    }
+    $('doneName').textContent = t('hello')(data.first_name);
+    let renewKey = null;
+    if (data.debt) {
+      show($('doneCounterWrap'), false);
+      $('doneOk').textContent = t('checkedOk'); show($('doneOk'), true);
+      renewKey = data.expired ? 'renewExpired' : 'renewDone';
+    } else {
+      show($('doneCounterWrap'), true);
+      $('doneCounter').textContent = data.remaining;
+      $('doneCounter').classList.toggle('low', data.remaining <= 2);
+      $('doneOk').textContent = t('checkedOk'); show($('doneOk'), true);
+      if (data.remaining === 0) renewKey = 'renewLast';
+      else if (data.remaining === 1) renewKey = 'renewOne';
+    }
+    if (data.member_no && isPhone(currentKey)) { $('doneTip').innerHTML = t('tip')(data.member_no); show($('doneTip'), true); }
+    if (renewKey) {
+      $('renewTitle').textContent = t(renewKey); $('renewBody').textContent = t('renewBody'); $('renewHint').textContent = t('renewCopy');
+      show($('renewCard'), true);
+    }
+    lastLookup = null;
+    show($('stepConfirm'), false); show($('stepDone'), true);
+  } catch(e) {
+    $('msgConfirm').textContent = t('connErr'); $('msgConfirm').className = 'msg err';
+  } finally { busy(false, 'btnCheckin'); }
+};
+
+$('renewPay').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText('01501545118');
+    $('renewHint').textContent = t('renewCopied');
+    setTimeout(()=>{ $('renewHint').textContent = t('renewCopy'); }, 2500);
+  } catch(e) {}
+};
+
+let histFrom = 'stepConfirm';
+async function openHistory(fromStep){
+  histFrom = fromStep;
+  const btn = fromStep==='stepConfirm' ? 'btnHist1' : 'btnHist2';
+  busy(true, btn);
+  try {
+    const data = await rpc('ze_history_key', currentKey);
+    if (!data.found) return;
+    const loc = lang==='ar' ? 'ar-EG' : 'en-GB';
+    $('histRemaining').textContent = data.remaining;
+    $('histRemaining').classList.toggle('low', data.remaining <= 2);
+    $('histOf').textContent = data.has_pkg ? t('histOf')(data.remaining, data.total) : t('histNoPkg');
+    if (data.has_pkg && data.expiry) {
+      const d = new Date(data.expiry+'T12:00:00Z');
+      $('histValid').textContent = t('histValidUntil')(d.toLocaleDateString(loc,{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}));
+    } else $('histValid').textContent = '';
+    const box = $('histList'); box.innerHTML='';
+    const dates = data.dates || [];
+    if (!dates.length) box.innerHTML = '<p class="msg" style="color:var(--muted)">'+t('histEmpty')+'</p>';
+    dates.forEach((ds,i)=>{
+      const d = new Date(ds+'T12:00:00Z');
+      box.insertAdjacentHTML('beforeend',
+        `<div class="hist-row"><span>${d.toLocaleDateString(loc,{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'})}</span><span class="n">${dates.length-i}</span></div>`);
+    });
+    show($(histFrom), false); show($('stepHist'), true);
+  } catch(e) {} finally { busy(false, btn); }
+}
+$('btnHist1').onclick = ()=>openHistory('stepConfirm');
+$('btnHist2').onclick = ()=>openHistory('stepDone');
+$('btnHistBack').onclick = ()=>{ show($('stepHist'), false); show($(histFrom), true); };
+
+function busy(on, btnId){ show($('spin'), on); $(btnId).disabled = on; }
+
+/* Saved on this phone? Go straight to the confirm step (one tap to check in). */
+const saved = store.get('ze_key');
+if (saved) { $('phone').value = saved; lookup(saved, true); }
+</script>
+</body>
+</html>

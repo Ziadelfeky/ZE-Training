@@ -118,6 +118,9 @@
   dialog .dsub{font-size:.8rem;color:var(--muted);margin-bottom:16px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
   .grid2 .full{grid-column:1/-1}
+  .grid2 label{min-width:0;display:block}
+  .grid2 input,.grid2 select{min-width:0;max-width:100%}
+  dialog{max-height:92dvh;overflow:auto}
   .fl{font-size:.7rem;color:var(--muted);letter-spacing:.06em;margin:2px 0 5px;display:block}
   .summary{font-size:.8rem;color:var(--gold);margin:-2px 0 12px;min-height:1.2em}
   .done-id{font-family:var(--serif);font-size:2.6rem;color:var(--gold);text-align:center;letter-spacing:.1em;margin:8px 0}
@@ -125,6 +128,12 @@
   .editbox{border:1px solid var(--line);border-radius:14px;padding:14px 14px 4px;margin-bottom:14px;background:var(--panel)}
   .editbox .err{margin-top:6px}
   .ok-note{color:var(--ok)}
+  .pays{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+  .pay{display:flex;align-items:center;gap:8px;font-size:.76rem;color:var(--muted)}
+  .pay b{font-weight:500;color:var(--text)}
+  .pay button{background:none;border:none;color:var(--soft);cursor:pointer;font-size:.8rem;padding:0 4px}
+  .pay button:hover{color:var(--warn)}
+  .owed{color:var(--warn)} .paidok{color:var(--ok)}
 
   @media (max-width:760px){
     .hero{grid-template-columns:1fr}
@@ -261,12 +270,44 @@
     <label><span class="fl">Price (EGP)</span><input id="pPrice" type="number" min="0" inputmode="numeric"></label>
     <label class="full"><span class="fl">Ends on</span><input id="pExpiry" type="date"></label>
     <label class="full"><span class="fl">Payment</span>
-      <select id="pMethod"><option value="cash">Paid · Cash</option><option value="instapay">Paid · InstaPay</option><option value="unpaid">Not paid yet</option></select></label>
+      <select id="pMethod"><option value="cash">Paid in full · Cash</option><option value="instapay">Paid in full · InstaPay</option><option value="part">Part paid now (split)</option><option value="unpaid">Not paid yet</option></select></label>
+    <label id="pPartWrap" class="hidden"><span class="fl">Paid now (EGP)</span><input id="pPartAmt" type="number" min="0" inputmode="numeric"></label>
+    <label id="pPartMWrap" class="hidden"><span class="fl">Paid by</span><select id="pPartMethod"><option value="cash">Cash</option><option value="instapay">InstaPay</option></select></label>
   </div>
   <p class="summary" id="pSummary"></p>
   <button class="btn" id="btnSavePkg">Save package</button>
   <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgPkg.close()">Cancel</button>
   <p class="err" id="pkgErr"></p>
+</dialog>
+
+<!-- ADD PAYMENT -->
+<dialog id="dlgPay">
+  <h3 id="payTitle">Add payment</h3>
+  <p class="dsub" id="paySub"></p>
+  <div class="grid2">
+    <label><span class="fl">Amount (EGP)</span><input id="payAmt" type="number" min="1" inputmode="numeric"></label>
+    <label><span class="fl">Paid by</span><select id="payMethod"><option value="cash">Cash</option><option value="instapay">InstaPay</option></select></label>
+    <label class="full"><span class="fl">Date</span><input id="payDate" type="date"></label>
+  </div>
+  <button class="btn" id="btnSavePay">Save payment</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgPay.close()">Cancel</button>
+  <p class="err" id="payErr"></p>
+</dialog>
+
+<!-- EDIT PACKAGE -->
+<dialog id="dlgEditPkg">
+  <h3>Edit package</h3>
+  <p class="dsub" id="epSub"></p>
+  <div class="grid2">
+    <label class="full"><span class="fl">Package name</span><input id="epName"></label>
+    <label><span class="fl">Sessions</span><input id="epSessions" type="number" min="1" inputmode="numeric"></label>
+    <label><span class="fl">Price (EGP)</span><input id="epPrice" type="number" min="0" inputmode="numeric"></label>
+    <label><span class="fl">Started</span><input id="epStart" type="date"></label>
+    <label><span class="fl">Ends on</span><input id="epEnd" type="date"></label>
+  </div>
+  <button class="btn" id="btnSaveEp">Save package</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgEditPkg.close()">Cancel</button>
+  <p class="err" id="epErr"></p>
 </dialog>
 
 <!-- LOG SESSION -->
@@ -308,6 +349,7 @@ const CHECKIN_URL = new URL('./', location.href).href;
 
 const AWAY_DAYS = 7, ALMOST_LEFT = 2, ALMOST_DAYS = 5, ENDED_WINDOW = 14, VALID_DAYS = 30;
 const PRESETS = [ ['8 sessions', 8, 2400], ['12 sessions', 12, 3600] ];   // [name, sessions, EGP]
+const T_PKG = 'ze_packages', T_PAY = 'ze_payments';
 
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
@@ -323,6 +365,8 @@ const addDays = (s, n) => { const d = new Date(s+'T12:00:00Z'); d.setUTCDate(d.g
 const diffDays = (a, b) => Math.round((new Date(a+'T12:00:00Z') - new Date(b+'T12:00:00Z')) / 864e5); // a - b
 const nice = (s, opts={day:'numeric',month:'short'}) => new Date(s+'T12:00:00Z').toLocaleDateString('en-GB', {...opts, timeZone:'UTC'});
 const niceAr = s => new Date(s+'T12:00:00Z').toLocaleDateString('ar-EG', {day:'numeric',month:'long',timeZone:'UTC'});
+const payDay = y => /^\d{4}-\d{2}-\d{2}$/.test(String(y.paid_at)) ? String(y.paid_at) : ymd(y.paid_at);   // works for date or timestamp
+const payStamp = d => d===todayStr() ? new Date().toISOString() : new Date(d+'T10:00:00Z').toISOString();
 const timeFmt = d => new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Cairo'});
 
 /* ---------- auth ---------- */
@@ -434,7 +478,7 @@ function render(){
   let week = 0; for (let i=0;i<7;i++) week += byDay[addDays(today,-i)] || 0;
   $('nWeek').textContent = week;
   const month = today.slice(0,7);
-  $('nMonth').textContent = egp(payments.filter(x=>ymd(x.paid_at).slice(0,7)===month).reduce((s,x)=>s+Number(x.amount_egp||0),0));
+  $('nMonth').textContent = egp(payments.filter(x=>payDay(x).slice(0,7)===month).reduce((s,x)=>s+Number(x.amount_egp||0),0));
   $('monthLbl').nextSibling.textContent = 'in ' + nice(today, {month:'long'});
   const debtN = attendance.filter(a=>a.is_debt).length;
   $('nDebt').textContent = debtN; $('debtBox').classList.toggle('warn', debtN>0);
@@ -480,7 +524,7 @@ function render(){
       ? `${egp(i.owed)} EGP owed · ${i.unpaid.map(x=>esc(pkgName(x.p))).join(', ')}`
       : `${i.latest ? esc(pkgName(i.latest.p))+' · ' : ''}ended ${nice(i.lastEnd)}`;
     const act = attnTab==='unpaid'
-      ? `<button class="btn btn-sm btn-ghost" onclick="openManage('${c.id}')">Mark paid</button>`
+      ? `<button class="btn btn-sm btn-ghost" onclick="openManage('${c.id}')">Add payment</button>`
       : `<button class="btn btn-sm btn-ghost" onclick="openPkg('${c.id}')">+ Package</button>`;
     return `<div class="item"><div class="who"><div class="name">${esc(c.full_name)}</div>
       <div class="meta">${c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${detail}</div></div>
@@ -578,16 +622,19 @@ function currentName(){
 }
 function summary(){
   const s = parseInt($('pSessions').value)||0, pr = parseFloat($('pPrice').value)||0;
-  $('pSummary').textContent = s ? `${currentName()} · ${egp(pr)} EGP · ends ${$('pExpiry').value?nice($('pExpiry').value):'—'}` : '';
+  const part = $('pMethod').value==='part', paidNow = Math.min(pr, parseFloat($('pPartAmt').value)||0);
+  $('pSummary').textContent = s ? `${currentName()} · ${egp(pr)} EGP · ends ${$('pExpiry').value?nice($('pExpiry').value):'—'}${part ? ' · '+egp(pr-paidNow)+' EGP left to pay' : ''}` : '';
 }
 $('pPreset').onchange = applyPreset;
+$('pMethod').onchange = ()=>{ const part = $('pMethod').value==='part'; show($('pPartWrap'), part); show($('pPartMWrap'), part); if (part && !$('pPartAmt').value) $('pPartAmt').value = Math.round((parseFloat($('pPrice').value)||0)/2); summary(); };
+$('pPartAmt').oninput = summary;
 ['pSessions','pPrice','pExpiry'].forEach(id=> $(id).oninput = summary);
 
 function openPkg(clientId){
   pkgClientId = clientId;
   const c = clients.find(x=>x.id===clientId);
   $('pkgTitle').textContent = 'New package' + (c ? ' · ' + firstName(c) : '');
-  $('pkgErr').textContent=''; $('pMethod').value='cash';
+  $('pkgErr').textContent=''; $('pMethod').value='cash'; $('pPartAmt').value=''; show($('pPartWrap'), false); show($('pPartMWrap'), false);
   const latest = c ? infoFor(c).latest : null;     // start from what they had last time
   const i = latest ? PRESETS.findIndex(x=> x[0]===latest.p.package_name) : -1;
   $('pPreset').value = i>-1 ? String(i) : (latest ? 'custom' : '0');
@@ -599,12 +646,13 @@ $('btnSavePkg').onclick = async ()=>{
   const sessions = parseInt($('pSessions').value), price = parseFloat($('pPrice').value)||0;
   if (!sessions || sessions<1){ $('pkgErr').textContent='Enter the number of sessions.'; return; }
   $('btnSavePkg').disabled = true;
-  const res = await db.from('ze_packages').insert({ client_id: pkgClientId, package_name: currentName(), sessions_total: sessions, price_egp: price,
+  const res = await db.from(T_PKG).insert({ client_id: pkgClientId, package_name: currentName(), sessions_total: sessions, price_egp: price,
     start_date: todayStr(), expiry_date: $('pExpiry').value || addDays(todayStr(), VALID_DAYS) }).select().single();
   if (res.error){ $('btnSavePkg').disabled = false; $('pkgErr').textContent='Could not save the package: ' + res.error.message; return; }
   const pkg = res.data, method = $('pMethod').value;
-  if (method!=='unpaid' && price>0){
-    await db.from('ze_payments').insert({ client_id:pkgClientId, package_id:pkg.id, amount_egp:price, method });
+  const amount = method==='part' ? Math.min(price, parseFloat($('pPartAmt').value)||0) : method==='unpaid' ? 0 : price;
+  if (amount>0){
+    await db.from(T_PAY).insert({ client_id:pkgClientId, package_id:pkg.id, amount_egp:amount, method: method==='part' ? $('pPartMethod').value : method, paid_at: payStamp(todayStr()) });
   }
   const debtRows = attendance.filter(a=>a.client_id===pkgClientId && a.is_debt).sort((a,b)=> new Date(a.checked_in_at)-new Date(b.checked_in_at));
   if (debtRows.length){
@@ -665,17 +713,7 @@ function openManage(clientId, focusPhone){
   show($('manageWa'), !!wa); if (wa) $('manageWa').href = wa;
   if (focusPhone) setTimeout(()=>$('ePhone').focus(), 50);
   const pk = c ? infoFor(c).pk : [];
-  $('manageList').innerHTML = pk.length ? pk.map(x=>{
-    const state = !x.inDate ? 'ended' : x.rem===0 ? 'used up' : 'active';
-    const pay = Number(x.p.price_egp)>0 ? (x.owed>0 ? `<span style="color:var(--warn)">${egp(x.owed)} EGP not paid</span>` : 'paid') : '';
-    return `<div class="item" style="padding:12px 2px;flex-direction:column;align-items:stretch">
-      <div class="who"><div class="name" style="font-size:1rem">${esc(pkgName(x.p))}</div>
-        <div class="meta">${x.used}/${x.p.sessions_total} used · ${state}${Number(x.p.price_egp)>0?' · '+egp(x.p.price_egp)+' EGP':''}${pay?' · '+pay:''}</div>
-        <div class="meta">${x.p.start_date?nice(String(x.p.start_date).slice(0,10)):''}${x.end?' → '+nice(x.end):''}</div></div>
-      <div class="row-btns">
-        ${x.owed>0?`<button class="btn btn-sm" onclick="markPaid('${x.p.id}','cash')">Paid cash</button><button class="btn btn-sm btn-ghost" onclick="markPaid('${x.p.id}','instapay')">Paid InstaPay</button>`:''}
-        <button class="btn btn-sm btn-ghost" onclick="deletePackage('${x.p.id}', ${x.used})">Delete</button></div></div>`;
-  }).join('') : '<p class="muted">No packages yet.</p>';
+  $('manageList').innerHTML = pk.length ? pk.map(pkgCard).join('') : '<p class="muted">No packages yet.</p>';
   if (!dlgManage.open) dlgManage.showModal();
 }
 $('btnSaveEdit').onclick = async ()=>{
@@ -693,20 +731,83 @@ $('btnSaveEdit').onclick = async ()=>{
   await loadAll(); openManage(manageId);
   $('editErr').className = 'err ok-note'; $('editErr').textContent = 'Saved. They can check in with ID ' + no + (phone ? ' or ' + phone : '') + '.';
 };
-async function markPaid(pkgId, method){
-  const p = packages.find(x=>x.id===pkgId); if (!p) return;
-  const owed = Math.max(0, Number(p.price_egp||0) - paidOf(pkgId));
-  if (!owed) return;
-  await db.from('ze_payments').insert({ client_id:p.client_id, package_id:pkgId, amount_egp:owed, method });
-  await loadAll(); openManage(p.client_id);
+/* ---------- packages: payments (split or full) and editing ---------- */
+function pkgCard(x){
+  const price = Number(x.p.price_egp||0);
+  const state = !x.inDate ? 'ended' : x.rem===0 ? 'used up' : 'active';
+  const pays = payments.filter(y=>y.package_id===x.p.id).sort((a,b)=> String(a.paid_at).localeCompare(String(b.paid_at)));
+  const money = price>0
+    ? (x.owed>0 ? `Paid ${egp(x.paid)} of ${egp(price)} · <span class="owed">${egp(x.owed)} EGP left</span>` : `<span class="paidok">Paid in full · ${egp(price)} EGP</span>`)
+    : 'No price set';
+  return `<div class="item" style="padding:12px 2px;flex-direction:column;align-items:stretch;gap:2px">
+    <div class="who"><div class="name" style="font-size:1rem">${esc(pkgName(x.p))}</div>
+      <div class="meta">${x.used}/${x.p.sessions_total} used · ${state} · ${x.p.start_date?nice(String(x.p.start_date).slice(0,10)):''}${x.end?' → '+nice(x.end):''}</div>
+      <div class="meta">${money}</div>
+      ${pays.length?`<div class="pays">${pays.map(y=>`<div class="pay"><b>${egp(y.amount_egp)} EGP</b> · ${y.method==='instapay'?'InstaPay':'Cash'} · ${nice(payDay(y))}<button title="Remove this payment" onclick="removePayment('${y.id}')">✕</button></div>`).join('')}</div>`:''}</div>
+    <div class="row-btns">
+      ${x.owed>0?`<button class="btn btn-sm" onclick="openPay('${x.p.id}')">Add payment</button>`:''}
+      <button class="btn btn-sm btn-ghost" onclick="openEditPkg('${x.p.id}')">Edit package</button>
+      <button class="btn btn-sm btn-ghost" onclick="deletePackage('${x.p.id}', ${x.used})">Delete</button></div></div>`;
 }
+let payPkgId = null, epPkgId = null;
+function openPay(pkgId){
+  const p = packages.find(x=>x.id===pkgId); if (!p) return;
+  payPkgId = pkgId;
+  const owed = Math.max(0, Number(p.price_egp||0) - paidOf(pkgId));
+  $('payTitle').textContent = 'Add payment · ' + pkgName(p);
+  $('paySub').textContent = owed ? `${egp(owed)} EGP left to pay. Enter less for a split payment.` : 'This package is fully paid.';
+  $('payAmt').value = owed || ''; $('payMethod').value = 'cash'; $('payDate').value = todayStr(); $('payDate').max = todayStr(); $('payErr').textContent = '';
+  dlgPay.showModal();
+}
+$('btnSavePay').onclick = async ()=>{
+  const p = packages.find(x=>x.id===payPkgId); if (!p) return;
+  const amt = parseFloat($('payAmt').value)||0, d = $('payDate').value || todayStr();
+  if (amt<=0){ $('payErr').textContent = 'Enter the amount paid.'; return; }
+  const owed = Math.max(0, Number(p.price_egp||0) - paidOf(payPkgId));
+  if (amt>owed && !confirm(`That is more than the ${egp(owed)} EGP left on this package. Save anyway?`)) return;
+  $('btnSavePay').disabled = true;
+  const { error } = await db.from(T_PAY).insert({ client_id:p.client_id, package_id:p.id, amount_egp:amt, method:$('payMethod').value, paid_at: payStamp(d) });
+  $('btnSavePay').disabled = false;
+  if (error){ $('payErr').textContent = 'Could not save: ' + error.message; return; }
+  dlgPay.close(); await loadAll(); openManage(p.client_id);
+};
+async function removePayment(id){
+  const y = payments.find(x=>x.id===id); if (!y) return;
+  if (!confirm(`Remove the ${egp(y.amount_egp)} EGP payment from ${nice(payDay(y))}?`)) return;
+  await db.from(T_PAY).delete().eq('id', id);
+  await loadAll(); openManage(y.client_id);
+}
+function openEditPkg(pkgId){
+  const p = packages.find(x=>x.id===pkgId); if (!p) return;
+  epPkgId = pkgId;
+  const used = usedOf(pkgId);
+  $('epSub').textContent = used ? `${used} session${used>1?'s':''} already used on this package.` : 'No sessions used yet.';
+  $('epName').value = pkgName(p); $('epSessions').value = p.sessions_total; $('epPrice').value = Number(p.price_egp||0);
+  $('epStart').value = String(p.start_date||'').slice(0,10); $('epEnd').value = endOf(p) || ''; $('epErr').textContent = '';
+  dlgEditPkg.showModal();
+}
+$('btnSaveEp').onclick = async ()=>{
+  const p = packages.find(x=>x.id===epPkgId); if (!p) return;
+  const sessions = parseInt($('epSessions').value), price = parseFloat($('epPrice').value)||0, used = usedOf(epPkgId);
+  if (!sessions || sessions<1){ $('epErr').textContent = 'Enter the number of sessions.'; return; }
+  if (sessions < used){ $('epErr').textContent = `${used} sessions are already used. Sessions can’t be lower than that.`; return; }
+  if ($('epStart').value && $('epEnd').value && $('epEnd').value < $('epStart').value){ $('epErr').textContent = 'The end date is before the start date.'; return; }
+  const row = { package_name: $('epName').value.trim() || pkgName(p), sessions_total: sessions, price_egp: price, expiry_date: $('epEnd').value || null };
+  if ($('epStart').value) row.start_date = $('epStart').value;
+  $('btnSaveEp').disabled = true;
+  const { error } = await db.from(T_PKG).update(row).eq('id', epPkgId);
+  $('btnSaveEp').disabled = false;
+  if (error){ $('epErr').textContent = 'Could not save: ' + error.message; return; }
+  dlgEditPkg.close(); await loadAll(); openManage(p.client_id);
+};
 async function deletePackage(id, usedCount){
+  const p = packages.find(x=>x.id===id);
   const warn = usedCount>0
     ? 'This package has ' + usedCount + ' logged sessions. Deleting it keeps the session records but detaches them. Delete package?'
     : 'Delete this package?';
   if (!confirm(warn)) return;
-  await db.from('ze_packages').delete().eq('id', id);
-  await loadAll(); dlgManage.close();
+  await db.from(T_PKG).delete().eq('id', id);
+  await loadAll(); if (p) openManage(p.client_id); else dlgManage.close();
 }
 async function deleteAttendance(id){
   const a = attendance.find(x=>x.id===id), c = a ? clients.find(x=>x.id===a.client_id) : null;

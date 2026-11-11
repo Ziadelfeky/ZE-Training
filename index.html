@@ -187,7 +187,7 @@ const T = {
     title:'أهلاً بيك في التمرين',
     subtitle:'اكتب رقم العضوية أو رقم موبايلك المسجّل',
     keyPh:'رقم العضوية أو الموبايل',
-    keyHint:'رقم العضوية 4 أرقام · الموبايل 11 رقم',
+    keyHint:'رقم العضوية أو رقم الموبايل (11 رقم)',
     continue:'متابعة',
     confirm:'تأكيد الحضور',
     notMe:'مش أنا — رجوع',
@@ -198,7 +198,7 @@ const T = {
     expiredInfo:'مفيش باقة سارية دلوقتي — هنسجّل حضورك النهارده وتقدر تجدد مع كوتش زياد',
     alreadyToday:'إنت مسجّل حضورك النهارده بالفعل ✓',
     checkedOk:'✓ تم تسجيل حضورك — تمرين موفق',
-    invalidKey:'اكتب رقم العضوية (4 أرقام) أو موبايل من 11 رقم',
+    invalidKey:'اكتب رقم العضوية أو موبايل من 11 رقم',
     notFound:'الرقم ده مش مسجّل — كلّم كوتش زياد يضيفك',
     connErr:'حصلت مشكلة في الاتصال — جرّب تاني',
     genErr:'حصلت مشكلة — كلّم كوتش زياد',
@@ -224,7 +224,7 @@ const T = {
     title:'Ready to train',
     subtitle:'Enter your member ID or registered phone number',
     keyPh:'Member ID or phone',
-    keyHint:'Member ID: 4 digits · Phone: 11 digits',
+    keyHint:'Your member ID, or your 11-digit phone number',
     continue:'Continue',
     confirm:'Confirm check-in',
     notMe:'Not me — back',
@@ -235,7 +235,7 @@ const T = {
     expiredInfo:'No active package right now. Today will still be logged, and you can renew with Coach Ziad.',
     alreadyToday:'You are already checked in today ✓',
     checkedOk:'✓ Checked in. Have a great session',
-    invalidKey:'Enter your 4-digit member ID or 11-digit phone number',
+    invalidKey:'Enter your member ID or 11-digit phone number',
     notFound:'Not registered yet. Ask Coach Ziad to add you',
     connErr:'Connection problem. Try again',
     genErr:'Something went wrong. Please tell Coach Ziad',
@@ -278,7 +278,7 @@ const $ = id => document.getElementById(id);
 const show = (el,on=true)=>el.classList.toggle('hidden',!on);
 const clean = k => { k = String(k||'').replace(/\D/g,''); return /^20\d{10}$/.test(k) ? '0'+k.slice(2) : k; };
 const isPhone = k => /^01\d{9}$/.test(k);
-const isId = k => /^\d{4}$/.test(k);
+const isId = k => /^\d{3,4}$/.test(k);
 let currentKey = '', lastLookup = null;
 
 async function rpc(name, key){

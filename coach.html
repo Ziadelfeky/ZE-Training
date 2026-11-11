@@ -122,6 +122,9 @@
   .summary{font-size:.8rem;color:var(--gold);margin:-2px 0 12px;min-height:1.2em}
   .done-id{font-family:var(--serif);font-size:2.6rem;color:var(--gold);text-align:center;letter-spacing:.1em;margin:8px 0}
   .row-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .editbox{border:1px solid var(--line);border-radius:14px;padding:14px 14px 4px;margin-bottom:14px;background:var(--panel)}
+  .editbox .err{margin-top:6px}
+  .ok-note{color:var(--ok)}
 
   @media (max-width:760px){
     .hero{grid-template-columns:1fr}
@@ -229,9 +232,10 @@
 <dialog id="dlgClient">
   <div id="clientForm">
     <h3>New client</h3>
-    <p class="dsub">A 4-digit member ID is created automatically.</p>
+    <p class="dsub">Phone and member ID are optional. Leave the ID empty to create one automatically.</p>
     <input id="cName" placeholder="Full name">
-    <input id="cPhone" type="tel" inputmode="numeric" placeholder="Phone (01XXXXXXXXX)" maxlength="11">
+    <input id="cPhone" type="tel" inputmode="numeric" placeholder="Phone (01XXXXXXXXX) · optional" maxlength="11">
+    <input id="cNo" type="tel" inputmode="numeric" placeholder="Member ID · optional" maxlength="4">
     <button class="btn" id="btnSaveClient">Save client</button>
     <button class="btn btn-ghost" style="margin-top:8px" onclick="dlgClient.close()">Cancel</button>
     <p class="err" id="clientErr"></p>
@@ -280,8 +284,18 @@
 <dialog id="dlgManage">
   <h3 id="manageTitle">Packages</h3>
   <p class="dsub" id="manageSub"></p>
-  <a class="btn btn-sm btn-wa" id="manageWa" target="_blank" rel="noopener" style="margin-bottom:12px">Send ID &amp; check-in link</a>
-  <div id="manageList" style="max-height:52vh;overflow:auto"></div>
+  <div class="editbox">
+    <div class="grid2">
+      <label class="full"><span class="fl">Name</span><input id="eName"></label>
+      <label><span class="fl">Phone</span><input id="ePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="01XXXXXXXXX"></label>
+      <label><span class="fl">Member ID</span><input id="eNo" type="tel" inputmode="numeric" maxlength="4" placeholder="3–4 digits"></label>
+    </div>
+    <div class="row-btns" style="margin-top:0"><button class="btn btn-sm" id="btnSaveEdit">Save changes</button>
+      <a class="btn btn-sm btn-wa" id="manageWa" target="_blank" rel="noopener">Send ID &amp; check-in link</a></div>
+    <p class="err" id="editErr"></p>
+  </div>
+  <p class="fl" style="margin:6px 0 0">Packages</p>
+  <div id="manageList" style="max-height:44vh;overflow:auto"></div>
   <button class="btn btn-ghost" style="margin-top:12px" onclick="dlgManage.close()">Close</button>
 </dialog>
 
@@ -387,7 +401,11 @@ function infoFor(c){
 }
 
 /* ---------- WhatsApp ---------- */
-const waTo = (c, msg) => 'https://wa.me/20' + String(c.phone||'').replace(/\D/g,'').replace(/^0/,'') + '?text=' + encodeURIComponent(msg);
+const hasPhone = c => /^01\d{9}$/.test(String(c.phone||''));
+const waTo = (c, msg) => hasPhone(c) ? 'https://wa.me/20' + String(c.phone).replace(/^0/,'') + '?text=' + encodeURIComponent(msg) : null;
+const waBtn = (href, label) => href
+  ? `<a class="btn btn-sm btn-wa" href="${href}" target="_blank" rel="noopener">${label||'WhatsApp'}</a>`
+  : '';
 function waLink(c, kind, info){
   const first = firstName(c), n = info.left;
   const leftAr = n===1 ? 'حصة واحدة' : n===2 ? 'حصتين' : n+' حصص';
@@ -467,7 +485,7 @@ function render(){
     return `<div class="item"><div class="who"><div class="name">${esc(c.full_name)}</div>
       <div class="meta">${c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${detail}</div></div>
       <div class="actions">
-        <a class="btn btn-sm btn-wa" href="${waLink(c, attnTab, i)}" target="_blank" rel="noopener">WhatsApp</a>${act}
+        ${hasPhone(c) ? waBtn(waLink(c, attnTab, i)) : `<button class="btn btn-sm btn-wa" onclick="openManage('${c.id}', true)">Add phone</button>`}${act}
       </div></div>`;
   }).join('') : `<div class="empty">${emptyMsg[attnTab]}</div>`;
 
@@ -502,7 +520,7 @@ function render(){
     return `<div class="item member">
       <div class="mtop">
         <div class="who"><div class="name">${esc(c.full_name)}</div>
-          <div class="meta">${c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${esc(c.phone)}</div>
+          <div class="meta">${c.member_no?'<span class="id">#'+esc(c.member_no)+'</span> · ':''}${c.phone ? esc(c.phone) : `<a href="#" style="color:var(--warn)" onclick="openManage('${c.id}', true);return false">+ add phone</a>`}</div>
           <div class="meta">${pkgLine} · last session ${i.lastVisit ? nice(i.lastVisit) : 'never'}</div>
           ${chips?'<div class="chips">'+chips+'</div>':''}</div>
         <div class="left"><b class="${n===0?'zero':''}">${n}</b><span>${n===1?'session':'sessions'} left</span></div>
@@ -510,7 +528,7 @@ function render(){
       <div class="actions macts">
         <button class="btn btn-sm" onclick="openLog('${c.id}')">Log session</button>
         <button class="btn btn-sm btn-ghost" onclick="openPkg('${c.id}')">+ Package</button>
-        <button class="btn btn-sm btn-ghost" onclick="openManage('${c.id}')">Details</button>
+        <button class="btn btn-sm btn-ghost" onclick="openManage('${c.id}')">Edit</button>
         <button class="btn btn-sm btn-ghost" title="Remove client" aria-label="Remove client" onclick="removeClient('${c.id}')">✕</button>
       </div></div>`;
   }).join('') : `<div class="empty">${clients.length ? 'No clients match.' : 'No clients yet. Tap “+ Client” to add your first one.'}</div>`;
@@ -524,16 +542,21 @@ $('btnAddClient').onclick = ()=>{ $('clientErr').textContent=''; show($('clientF
 $('btnSaveClient').onclick = async ()=>{
   const name = $('cName').value.trim().replace(/\s+/g,' ');
   const phone = $('cPhone').value.replace(/\D/g,'');
-  if (!name || !/^01\d{9}$/.test(phone)) { $('clientErr').textContent='Full name and a valid 11-digit phone are required.'; return; }
+  const no = $('cNo').value.replace(/\D/g,'');
+  if (!name) { $('clientErr').textContent='Enter the full name.'; return; }
+  if (phone && !/^01\d{9}$/.test(phone)) { $('clientErr').textContent='Phone must be 11 digits starting with 01 (or leave it empty).'; return; }
+  if (no && !/^\d{3,4}$/.test(no)) { $('clientErr').textContent='Member ID must be 3 or 4 digits (or leave it empty).'; return; }
   $('btnSaveClient').disabled = true;
-  const { data, error } = await db.from('ze_clients').insert({ full_name:name, phone, status:'active' }).select().single();
+  const row = { full_name:name, phone: phone||null, status:'active' }; if (no) row.member_no = no;
+  const { data, error } = await db.from('ze_clients').insert(row).select().single();
   $('btnSaveClient').disabled = false;
-  if (error){ $('clientErr').textContent = error.code==='23505' ? 'This phone is already registered.' : 'Could not save: ' + error.message; return; }
-  $('cName').value=''; $('cPhone').value='';
+  if (error){ $('clientErr').textContent = error.code==='23505' ? dupMsg(error) : 'Could not save: ' + error.message; return; }
+  $('cName').value=''; $('cPhone').value=''; $('cNo').value='';
   newClientId = data.id;
   $('cDoneName').textContent = data.full_name;
   $('cDoneId').textContent = data.member_no || '—';
-  $('cDoneWa').href = waWelcome(data);
+  const wa = waWelcome(data);
+  show($('cDoneWa'), !!wa); if (wa) $('cDoneWa').href = wa;
   show($('clientForm'),false); show($('clientDone'),true);
   loadAll();
 };
@@ -630,11 +653,17 @@ async function removeClient(id){
   await db.from('ze_clients').delete().eq('id', id);
   loadAll();
 }
-function openManage(clientId){
+let manageId = null;
+const dupMsg = e => /phone/i.test((e.message||'')+(e.details||'')) ? 'This phone is already used by another client.' : /member_no/i.test((e.message||'')+(e.details||'')) ? 'This member ID is already used by another client.' : 'This phone or ID is already used by another client.';
+function openManage(clientId, focusPhone){
   const c = clients.find(x=>x.id===clientId);
-  $('manageTitle').textContent = c ? c.full_name : 'Packages';
-  $('manageSub').textContent = c ? ('Member #' + (c.member_no||'—') + ' · ' + c.phone) : '';
-  $('manageWa').href = c ? waWelcome(c) : '#';
+  manageId = clientId;
+  $('manageTitle').textContent = c ? c.full_name : 'Client';
+  $('manageSub').textContent = c ? ('Member #' + (c.member_no||'—') + (c.phone ? ' · ' + c.phone : ' · no phone yet')) : '';
+  if (!dlgManage.open || focusPhone){ $('eName').value = c ? c.full_name : ''; $('ePhone').value = c && c.phone ? c.phone : ''; $('eNo').value = c ? (c.member_no||'') : ''; $('editErr').textContent=''; $('editErr').className='err'; }
+  const wa = c ? waWelcome(c) : null;
+  show($('manageWa'), !!wa); if (wa) $('manageWa').href = wa;
+  if (focusPhone) setTimeout(()=>$('ePhone').focus(), 50);
   const pk = c ? infoFor(c).pk : [];
   $('manageList').innerHTML = pk.length ? pk.map(x=>{
     const state = !x.inDate ? 'ended' : x.rem===0 ? 'used up' : 'active';
@@ -649,6 +678,21 @@ function openManage(clientId){
   }).join('') : '<p class="muted">No packages yet.</p>';
   if (!dlgManage.open) dlgManage.showModal();
 }
+$('btnSaveEdit').onclick = async ()=>{
+  const name = $('eName').value.trim().replace(/\s+/g,' ');
+  const phone = $('ePhone').value.replace(/\D/g,'');
+  const no = $('eNo').value.replace(/\D/g,'');
+  $('editErr').className = 'err';
+  if (!name) { $('editErr').textContent = 'Enter the full name.'; return; }
+  if (phone && !/^01\d{9}$/.test(phone)) { $('editErr').textContent = 'Phone must be 11 digits starting with 01 (or leave it empty).'; return; }
+  if (!/^\d{3,4}$/.test(no)) { $('editErr').textContent = 'Member ID must be 3 or 4 digits.'; return; }
+  $('btnSaveEdit').disabled = true;
+  const { error } = await db.from('ze_clients').update({ full_name:name, phone: phone||null, member_no:no }).eq('id', manageId);
+  $('btnSaveEdit').disabled = false;
+  if (error){ $('editErr').textContent = error.code==='23505' ? dupMsg(error) : 'Could not save: ' + error.message; return; }
+  await loadAll(); openManage(manageId);
+  $('editErr').className = 'err ok-note'; $('editErr').textContent = 'Saved. They can check in with ID ' + no + (phone ? ' or ' + phone : '') + '.';
+};
 async function markPaid(pkgId, method){
   const p = packages.find(x=>x.id===pkgId); if (!p) return;
   const owed = Math.max(0, Number(p.price_egp||0) - paidOf(pkgId));
